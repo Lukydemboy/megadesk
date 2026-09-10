@@ -467,6 +467,10 @@ body {
   min-height: 0;
   position: relative;
 }
+/* layout-transparent wrapper: the xterm host positions against .pane-body */
+.term-mount {
+  display: contents;
+}
 .term-host {
   position: absolute;
   inset: 0;

@@ -1,6 +1,6 @@
 import { bumpFontSize, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
-import { isPaletteOpen, toggleCommandPalette } from "./palette";
+import { isPaletteOpen, toggleCommandPalette } from "./overlays";
 
 export function installKeys() {
   // Capture phase: the focused xterm terminal calls stopPropagation on keys it
@@ -18,7 +18,7 @@ export function installKeys() {
         e.stopImmediatePropagation();
       };
       // Esc leaves a zoomed pane (the palette handles its own Esc first).
-      if (e.key === "Escape" && zoomedPane && !isPaletteOpen()) {
+      if (e.key === "Escape" && zoomedPane() && !isPaletteOpen()) {
         claim();
         toggleZoom();
         return;

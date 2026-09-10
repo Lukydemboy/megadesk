@@ -1,34 +1,28 @@
-import { type AgentDef, type Pane, uid } from "./types";
-import {
-  config,
-  mgr,
-  render,
-  saveConfig,
-  setFocusedPane,
-  shellPath,
-} from "./store";
-import { baseName, locateAgent, paneCwd, targetPane } from "./layout";
+import { type AgentDef, type Config, type Pane, type PaneRef, uid } from "./types";
+import { config, mgr, mutate, saveConfig, setFocusedPane, shellPath } from "./store";
+import { baseName, locateAgent, paneCwd, targetPaneRef } from "./layout";
 
 /* ---------- agent CRUD ---------- */
 
 export function upsertAgent(def: AgentDef) {
-  const i = config.agents.findIndex((a) => a.id === def.id);
-  if (i >= 0) config.agents[i] = def;
-  else config.agents.push(def);
+  mutate((c) => {
+    const i = c.agents.findIndex((a) => a.id === def.id);
+    if (i >= 0) c.agents[i] = def;
+    else c.agents.push(def);
+  });
   saveConfig();
-  render();
 }
 
 export function deleteAgent(id: string) {
-  config.agents = config.agents.filter((a) => a.id !== id);
-  for (const col of config.columns)
-    for (const p of col.panes) removeTabFromPane(p, id);
+  mutate((c) => {
+    c.agents = c.agents.filter((a) => a.id !== id);
+    for (const col of c.columns) for (const p of col.panes) removeTabFromPane(p, id);
+  });
   mgr.remove(id);
   saveConfig();
-  render();
 }
 
-/* ---------- tab placement ---------- */
+/* ---------- tab placement (draft helpers — call only inside `mutate`) ---------- */
 
 /** Drop tab `id` from a pane, keeping `activeId` pointed at something real. */
 export function removeTabFromPane(p: Pane, id: string) {
@@ -43,41 +37,52 @@ export function removeTabFromPane(p: Pane, id: string) {
  * An agent lives in exactly one pane (one live terminal, one host element), so
  * placing it somewhere means removing it from every other pane it sat in.
  */
-export function evictAgentFromOtherPanes(id: string, keep: Pane) {
-  for (const col of config.columns)
+export function evictAgentFromOtherPanes(c: Config, id: string, keep: Pane) {
+  for (const col of c.columns)
     for (const p of col.panes) if (p !== keep) removeTabFromPane(p, id);
 }
 
+/* ---------- tab placement (public) ---------- */
+
 /** Add an existing agent as a tab in the focused (or first free) pane. */
 export function assignAgentToPane(id: string) {
-  addAgentTab(targetPane(), id);
+  addAgentTab(targetPaneRef(), id);
 }
 
-export function addAgentTab(pane: Pane, id: string) {
-  if (!config.agents.some((a) => a.id === id)) return;
-  evictAgentFromOtherPanes(id, pane);
-  if (!pane.agentIds.includes(id)) pane.agentIds.push(id);
-  pane.activeId = id;
+export function addAgentTab(ref: PaneRef, id: string) {
+  mutate((c) => {
+    if (!c.agents.some((a) => a.id === id)) return;
+    const pane = c.columns[ref.ci]?.panes[ref.pi];
+    if (!pane) return;
+    evictAgentFromOtherPanes(c, id, pane);
+    if (!pane.agentIds.includes(id)) pane.agentIds.push(id);
+    pane.activeId = id;
+  });
   saveConfig();
-  render();
 }
 
 /** Remove a tab; a pane-owned shell with no other home is deleted outright. */
-export function closeTab(pane: Pane, id: string) {
-  removeTabFromPane(pane, id);
-  const def = config.agents.find((a) => a.id === id);
-  const elsewhere = config.columns.some((c) =>
-    c.panes.some((p) => p.agentIds.includes(id)),
-  );
-  if (def?.kind === "shell" && !elsewhere) {
-    config.agents = config.agents.filter((a) => a.id !== id);
-    mgr.remove(id);
-  }
+export function closeTab(ref: PaneRef, id: string) {
+  let disposed = false;
+  mutate((c) => {
+    const pane = c.columns[ref.ci]?.panes[ref.pi];
+    if (pane) removeTabFromPane(pane, id);
+    const def = c.agents.find((a) => a.id === id);
+    const elsewhere = c.columns.some((col) =>
+      col.panes.some((p) => p.agentIds.includes(id)),
+    );
+    if (def?.kind === "shell" && !elsewhere) {
+      c.agents = c.agents.filter((a) => a.id !== id);
+      disposed = true;
+    }
+  });
+  if (disposed) mgr.remove(id);
   saveConfig();
-  render();
 }
 
-export function newShellInPane(pane: Pane) {
+export function newShellInPane(ref: PaneRef) {
+  const pane = config.columns[ref.ci]?.panes[ref.pi];
+  if (!pane) return;
   const cwd = paneCwd(pane);
   const shell = shellPath || "zsh";
   const def: AgentDef = {
@@ -88,11 +93,14 @@ export function newShellInPane(pane: Pane) {
     cwd,
     kind: "shell",
   };
-  config.agents.push(def);
-  pane.agentIds.push(def.id);
-  pane.activeId = def.id;
+  mutate((c) => {
+    c.agents.push(def);
+    const p = c.columns[ref.ci]?.panes[ref.pi];
+    if (!p) return;
+    p.agentIds.push(def.id);
+    p.activeId = def.id;
+  });
   saveConfig();
-  render();
 }
 
 /**
@@ -103,13 +111,13 @@ export function revealAgent(id: string) {
   if (!config.agents.some((a) => a.id === id)) return;
   const loc = locateAgent(id);
   if (loc) {
-    const pane = config.columns[loc.ci].panes[loc.pi];
-    pane.activeId = id;
+    mutate((c) => {
+      c.columns[loc.ci].panes[loc.pi].activeId = id;
+    });
     setFocusedPane({ ci: loc.ci, pi: loc.pi });
     saveConfig();
-    render();
   } else {
-    assignAgentToPane(id); // adds it as a tab in the target pane, re-renders
+    assignAgentToPane(id); // adds it as a tab in the target pane
   }
   requestAnimationFrame(() => mgr.sessions.get(id)?.term.focus());
 }
