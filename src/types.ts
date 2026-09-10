@@ -25,6 +25,12 @@ export interface Column {
   panes: Pane[];
 }
 
+/** Address of a pane in the grid: column index + pane index within it. */
+export interface PaneRef {
+  ci: number;
+  pi: number;
+}
+
 export type StartupLayout = "last" | "1" | "2" | "3" | "4";
 
 export type TerminalTheme = "dark" | "light";
