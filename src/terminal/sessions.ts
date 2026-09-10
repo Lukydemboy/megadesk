@@ -89,8 +89,6 @@ export class Session {
     });
     this.fit = new FitAddon();
     this.term.loadAddon(this.fit);
-    // Make http/https URLs an agent prints clickable — open in the default
-    // browser rather than the webview, which has nowhere to show a page.
     this.term.loadAddon(
       new WebLinksAddon((event, uri) => {
         event.preventDefault();
