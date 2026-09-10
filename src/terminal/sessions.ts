@@ -1,3 +1,4 @@
+import { createStore, type SetStoreFunction } from "solid-js/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Terminal } from "@xterm/xterm";
@@ -75,6 +76,13 @@ export class Session {
   exited = false;
   starting = false;
   attention = false;
+  /** Set by SessionManager.ensure; lets a Session publish its own state. */
+  manager?: SessionManager;
+
+  /** Mirror running/exited/attention/starting into the manager's reactive store. */
+  private touch() {
+    this.manager?.sync(this.def.id);
+  }
 
   constructor(def: AgentDef, settings?: Settings) {
     this.def = def;
@@ -179,17 +187,16 @@ export class Session {
   }
 
   markOutput(mgr: SessionManager) {
+    if (!this.exited && !this.attention) return;
     this.exited = false;
-    if (this.attention) {
-      this.attention = false;
-      mgr.onAttentionChange();
-    }
+    this.attention = false;
+    mgr.sync(this.def.id);
   }
 
   clearAttention(mgr: SessionManager) {
     if (this.attention) {
       this.attention = false;
-      mgr.onAttentionChange();
+      mgr.sync(this.def.id);
     }
   }
 
@@ -231,6 +238,7 @@ export class Session {
   async start(mgr: SessionManager) {
     if (this.running || this.exited || this.starting) return;
     this.starting = true;
+    mgr.sync(this.def.id);
     try {
       const alive = await invoke<boolean>("agent_running", { id: this.def.id });
       if (!alive) {
@@ -248,7 +256,7 @@ export class Session {
       if (snap) this.term.write(b64ToBytes(snap));
       this.running = true;
       this.exited = false;
-      mgr.onAttentionChange();
+      mgr.sync(this.def.id);
 
       // Match the pty to the current pane size and force the child to
       // redraw: SIGWINCH only fires on a real size change, so nudge the
@@ -269,6 +277,7 @@ export class Session {
       await invoke("resize_agent", { id: this.def.id, cols, rows });
     } finally {
       this.starting = false;
+      mgr.sync(this.def.id);
     }
   }
 
@@ -287,6 +296,7 @@ export class Session {
       },
     });
     this.running = true;
+    this.touch();
   }
 
   async kill() {
@@ -301,8 +311,9 @@ export class Session {
     }
     this.term.reset();
     this.running = false;
+    this.exited = false;
     await this.spawn();
-    mgr.onAttentionChange();
+    mgr.sync(this.def.id);
   }
 
   dispose() {
@@ -311,18 +322,31 @@ export class Session {
   }
 }
 
+export interface SessionState {
+  running: boolean;
+  exited: boolean;
+  attention: boolean;
+  starting: boolean;
+}
+
 export class SessionManager {
   sessions = new Map<string, Session>();
   settings: Settings;
   activeAgentId: string | null = null;
   visibleIds = new Set<string>();
 
-  onAttentionChange: () => void = () => {};
+  /** Reactive mirror of each Session's runtime flags, keyed by agent id. */
+  state: Record<string, SessionState>;
+  private setState: SetStoreFunction<Record<string, SessionState>>;
+
   onFocusAgent: (id: string) => void = () => {};
   onToast: (message: string, kind?: "info" | "warn") => void = () => {};
 
   constructor(settings: Settings) {
     this.settings = settings;
+    const [state, setState] = createStore<Record<string, SessionState>>({});
+    this.state = state;
+    this.setState = setState;
     window.addEventListener("focus", () => {
       if (this.activeAgentId)
         this.sessions.get(this.activeAgentId)?.clearAttention(this);
@@ -345,8 +369,23 @@ export class SessionManager {
         } —\x1b[0m\r\n`,
       );
       s.attention = true;
-      this.onAttentionChange();
+      this.sync(e.payload.id);
       this.onToast(`${s.def.name} — process exited`, "warn");
+    });
+  }
+
+  /** Publish one session's runtime flags into the reactive `state` store. */
+  sync(id: string) {
+    const s = this.sessions.get(id);
+    if (!s) {
+      this.setState(id, undefined!);
+      return;
+    }
+    this.setState(id, {
+      running: s.running,
+      exited: s.exited,
+      attention: s.attention,
+      starting: s.starting,
     });
   }
 
@@ -354,12 +393,14 @@ export class SessionManager {
     let s = this.sessions.get(def.id);
     if (!s) {
       s = new Session(def, this.settings);
+      s.manager = this;
       s.term.textarea?.addEventListener("focus", () => {
         this.activeAgentId = def.id;
         s!.clearAttention(this);
         this.onFocusAgent(def.id);
       });
       this.sessions.set(def.id, s);
+      this.sync(def.id);
     } else {
       s.def = def;
     }
@@ -369,7 +410,7 @@ export class SessionManager {
   remove(id: string) {
     this.sessions.get(id)?.dispose();
     this.sessions.delete(id);
-    this.onAttentionChange();
+    this.sync(id);
   }
 
   /** Re-apply terminal font settings to every live session. */

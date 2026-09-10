@@ -1,5 +1,6 @@
 import "@xterm/xterm/css/xterm.css";
 import "./style.css";
+import { render } from "solid-js/web";
 import { invoke } from "@tauri-apps/api/core";
 import { SessionManager } from "./terminal/sessions";
 import {
@@ -9,15 +10,12 @@ import {
   setFocusedPane,
   setHomeDir,
   setMgr,
-  setRenderer,
   setShellPath,
 } from "./core/store";
 import { PRESETS, applyPreset } from "./core/layout";
-import { render, updateSidebarBadges } from "./ui/view";
+import { App } from "./ui/app";
 import { installKeys } from "./ui/keys";
-import { showToast } from "./ui/dom";
-
-setRenderer(render);
+import { showToast } from "./ui/Toasts";
 
 async function boot() {
   await loadConfig();
@@ -34,7 +32,6 @@ async function boot() {
   }
 
   const m = new SessionManager(config.settings);
-  m.onAttentionChange = updateSidebarBadges;
   m.onToast = showToast;
   m.onFocusAgent = (id) => {
     config.columns.forEach((col, ci) =>
@@ -46,13 +43,10 @@ async function boot() {
   setMgr(m);
 
   const startup = config.settings.startupLayout;
-  if (startup !== "last" && PRESETS[startup]) {
-    applyPreset(PRESETS[startup]); // calls render()
-  } else {
-    render();
-  }
+  if (startup !== "last" && PRESETS[startup]) applyPreset(PRESETS[startup]);
+
+  render(() => <App />, document.getElementById("app")!);
   installKeys();
-  setInterval(updateSidebarBadges, 1500);
 }
 
 void boot();
