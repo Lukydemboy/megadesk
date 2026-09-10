@@ -5,16 +5,22 @@ import {
   type TerminalTheme,
   DEFAULT_TERM_FONT,
   uid,
-} from "./types";
-import { applyTerminalTheme, config, homeDir, mgr, saveConfig } from "./store";
+} from "../core/types";
+import {
+  applyTerminalTheme,
+  config,
+  homeDir,
+  mgr,
+  saveConfig,
+} from "../core/store";
 import { el, field, makeDialog, pathField, select } from "./dom";
-import { paneCwd } from "./layout";
+import { paneCwd } from "../core/layout";
 import {
   addAgentTab,
   assignAgentToPane,
   deleteAgent,
   upsertAgent,
-} from "./agents";
+} from "../core/agents";
 
 export function openAgentDialog(existing?: AgentDef, targetPane?: Pane) {
   const editing = !!existing;

@@ -1,7 +1,7 @@
 import "@xterm/xterm/css/xterm.css";
 import "./style.css";
 import { invoke } from "@tauri-apps/api/core";
-import { SessionManager } from "./sessions";
+import { SessionManager } from "./terminal/sessions";
 import {
   applyTerminalTheme,
   config,
@@ -11,11 +11,11 @@ import {
   setMgr,
   setRenderer,
   setShellPath,
-} from "./store";
-import { PRESETS, applyPreset } from "./layout";
-import { render, updateSidebarBadges } from "./view";
-import { installKeys } from "./keys";
-import { showToast } from "./dom";
+} from "./core/store";
+import { PRESETS, applyPreset } from "./core/layout";
+import { render, updateSidebarBadges } from "./ui/view";
+import { installKeys } from "./ui/keys";
+import { showToast } from "./ui/dom";
 
 setRenderer(render);
 

@@ -3,12 +3,12 @@ import { listen } from "@tauri-apps/api/event";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import type { AgentDef, Settings, TerminalTheme } from "./types";
+import type { AgentDef, Settings, TerminalTheme } from "../core/types";
 import {
   DEFAULT_TERM_FONT,
   DEFAULT_TERM_FONT_SIZE,
   DEFAULT_TERM_THEME,
-} from "./types";
+} from "../core/types";
 
 import type { ITheme } from "@xterm/xterm";
 

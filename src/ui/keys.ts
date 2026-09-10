@@ -1,5 +1,5 @@
-import { bumpFontSize, zoomedPane } from "./store";
-import { cycleTab, selectTabByIndex, toggleZoom } from "./layout";
+import { bumpFontSize, zoomedPane } from "../core/store";
+import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
 import { isPaletteOpen, toggleCommandPalette } from "./palette";
 
 export function installKeys() {

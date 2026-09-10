@@ -1,6 +1,6 @@
-import type { Pane } from "./types";
-import { config, render, saveConfig, setFocusedPane } from "./store";
-import { addAgentTab, evictAgentFromOtherPanes } from "./agents";
+import type { Pane } from "../core/types";
+import { config, render, saveConfig, setFocusedPane } from "../core/store";
+import { addAgentTab, evictAgentFromOtherPanes } from "../core/agents";
 
 export const DND_TYPE = "application/x-megadesk-agent";
 export const TAB_DND = "application/x-megadesk-tab";

@@ -6,8 +6,7 @@ import {
   type Settings,
   defaultConfig,
 } from "./types";
-import type { SessionManager } from "./sessions";
-import { clamp } from "./dom";
+import type { SessionManager } from "../terminal/sessions";
 
 /* ---------- shared runtime state ---------- */
 
@@ -124,7 +123,8 @@ export function applyTerminalTheme() {
 /** Nudge the terminal font size and re-apply it live. delta 0 resets. */
 export function bumpFontSize(delta: number) {
   const s = config.settings;
-  const next = delta === 0 ? 12.5 : clamp(s.terminalFontSize + delta, 6, 40);
+  const next =
+    delta === 0 ? 12.5 : Math.max(6, Math.min(40, s.terminalFontSize + delta));
   if (next === s.terminalFontSize) return;
   s.terminalFontSize = next;
   saveConfig();

@@ -1,8 +1,8 @@
-import type { AgentDef, PaneRef } from "./types";
-import { config, mgr } from "./store";
+import type { AgentDef, PaneRef } from "../core/types";
+import { config, mgr } from "../core/store";
 import { el } from "./dom";
-import { locateAgent } from "./layout";
-import { revealAgent } from "./agents";
+import { locateAgent } from "../core/layout";
+import { revealAgent } from "../core/agents";
 
 /** Tears down the command palette if it's open; null when it isn't. */
 let closePalette: (() => void) | null = null;

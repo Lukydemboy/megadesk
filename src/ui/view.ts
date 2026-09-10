@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AgentDef, Pane } from "./types";
+import type { AgentDef, Pane } from "../core/types";
 import {
   config,
   mgr,
@@ -7,7 +7,7 @@ import {
   setFocusedPane,
   setZoomedPane,
   zoomedPane,
-} from "./store";
+} from "../core/store";
 import { app, clamp, el, icon, makeGutter } from "./dom";
 import {
   PRESETS,
@@ -15,8 +15,13 @@ import {
   baseName,
   paneCwd,
   toggleZoom,
-} from "./layout";
-import { assignAgentToPane, closeTab, newShellInPane, upsertAgent } from "./agents";
+} from "../core/layout";
+import {
+  assignAgentToPane,
+  closeTab,
+  newShellInPane,
+  upsertAgent,
+} from "../core/agents";
 import { DND_TYPE, wireDrop, wireTabDrag } from "./dnd";
 import { openAgentDialog, openSettingsDialog } from "./dialogs";
 
