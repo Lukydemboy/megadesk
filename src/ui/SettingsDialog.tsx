@@ -2,10 +2,12 @@ import { Show } from "solid-js";
 import {
   type StartupLayout,
   type TerminalTheme,
+  type UiTheme,
   DEFAULT_TERM_FONT,
 } from "../core/types";
 import {
   applyTerminalTheme,
+  applyUiTheme,
   config,
   homeDir,
   mgr,
@@ -58,6 +60,21 @@ export function SettingsDialog() {
           onChange={(v) => {
             setConfig("settings", "defaultCwd", v.trim());
             saveConfig();
+          }}
+        />
+
+        <SelectField
+          label="UI theme"
+          options={[
+            { value: "system", label: "Match system" },
+            { value: "light", label: "Light" },
+            { value: "dark", label: "Dark" },
+          ]}
+          value={s().uiTheme}
+          onChange={(v) => {
+            setConfig("settings", "uiTheme", v as UiTheme);
+            saveConfig();
+            applyUiTheme();
           }}
         />
 
