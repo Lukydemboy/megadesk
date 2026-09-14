@@ -9,7 +9,7 @@ import {
 } from "solid-js";
 import type { AgentDef, PaneRef } from "../core/types";
 import { config, mgr } from "../core/store";
-import { locateAgent } from "../core/layout";
+import { locateAgent, paneLabel } from "../core/layout";
 import { revealAgent } from "../core/agents";
 import { paletteOpen, setPaletteOpen } from "./overlays";
 
@@ -83,16 +83,6 @@ function PaletteBox() {
     revealAgent(it.def.id);
   };
 
-  const where = (loc: PaneRef | null) => {
-    if (!loc) return "off grid";
-    const cols = config.columns.length > 1;
-    const rows = config.columns[loc.ci].panes.length > 1;
-    if (cols && rows) return `col ${loc.ci + 1} · pane ${loc.pi + 1}`;
-    if (cols) return `col ${loc.ci + 1}`;
-    if (rows) return `pane ${loc.pi + 1}`;
-    return "grid";
-  };
-
   const onKey = (e: KeyboardEvent) => {
     if (!["Escape", "ArrowDown", "ArrowUp", "Enter"].includes(e.key)) return;
     e.preventDefault();
@@ -157,7 +147,7 @@ function PaletteBox() {
                       }}
                     />
                     <span class="palette-name">{it.def.name}</span>
-                    <span class="palette-where">{where(it.loc)}</span>
+                    <span class="palette-where">{paneLabel(it.loc)}</span>
                   </div>
                 );
               }}
