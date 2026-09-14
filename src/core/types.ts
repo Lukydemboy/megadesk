@@ -35,6 +35,9 @@ export type StartupLayout = "last" | "1" | "2" | "3" | "4";
 
 export type TerminalTheme = "dark" | "light";
 
+/** Colour scheme for the app chrome (topbar, sidebar, panes, dialogs). */
+export type UiTheme = "system" | "light" | "dark";
+
 export interface Settings {
   /** Pane layout to apply on launch; "last" keeps the saved layout. */
   startupLayout: StartupLayout;
@@ -46,9 +49,12 @@ export interface Settings {
   terminalFontSize: number;
   /** Colour scheme for the terminals (and the pane chrome behind them). */
   terminalTheme: TerminalTheme;
+  /** Colour scheme for the rest of the UI; "system" follows the OS. */
+  uiTheme: UiTheme;
 }
 
 export const DEFAULT_TERM_THEME: TerminalTheme = "dark";
+export const DEFAULT_UI_THEME: UiTheme = "system";
 
 export const DEFAULT_TERM_FONT =
   '"MonoLisa", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace';
@@ -72,6 +78,7 @@ export function defaultConfig(): Config {
       terminalFontFamily: DEFAULT_TERM_FONT,
       terminalFontSize: DEFAULT_TERM_FONT_SIZE,
       terminalTheme: DEFAULT_TERM_THEME,
+      uiTheme: DEFAULT_UI_THEME,
     },
   };
 }

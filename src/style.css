@@ -14,6 +14,39 @@
   --shadow: #111111;
 }
 
+/* Dark UI theme: "system" (no attribute) follows prefers-color-scheme;
+   an explicit choice in Settings sets data-theme and wins either way. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1c20;
+    --panel: #232429;
+    --panel-2: #2b2c32;
+    --ink: #eeece3;
+    --border: #eeece3;
+    --text: #eeece3;
+    --muted: #97948a;
+    --accent: #c17aff;
+    --attn: #ffd21f;
+    --ok: #33d17a;
+    --danger: #ff6b62;
+    --shadow: #000000;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1c20;
+  --panel: #232429;
+  --panel-2: #2b2c32;
+  --ink: #eeece3;
+  --border: #eeece3;
+  --text: #eeece3;
+  --muted: #97948a;
+  --accent: #c17aff;
+  --attn: #ffd21f;
+  --ok: #33d17a;
+  --danger: #ff6b62;
+  --shadow: #000000;
+}
+
 /* Light terminal theme: the pane chrome sits on white behind the xterm. */
 body.term-light {
   --term-bg: #ffffff;
@@ -495,6 +528,25 @@ body {
 }
 .term-host .xterm {
   height: 100%;
+}
+/* xterm's own scroll container; unstyled it falls back to an opaque
+   white OS scrollbar that sits on top of the dark pane and clips text. */
+.term-host .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.term-host .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+.term-host .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.term-host .xterm-viewport::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 0;
+}
+.term-host .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
 }
 .term-host.file-drop::after {
   content: "Drop file — its path is typed in";
