@@ -10,6 +10,7 @@ import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import { Grid } from "./Grid";
 import { AgentDialog } from "./AgentDialog";
+import { AgentPicker } from "./AgentPicker";
 import { SettingsDialog } from "./SettingsDialog";
 import { CommandPalette } from "./CommandPalette";
 import { Toasts } from "./Toasts";
@@ -99,6 +100,7 @@ export function App() {
         <Grid />
       </div>
       <AgentDialog />
+      <AgentPicker />
       <SettingsDialog />
       <CommandPalette />
       <Toasts />

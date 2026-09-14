@@ -11,6 +11,7 @@ export interface AgentDialogState {
 export const [agentDialog, setAgentDialog] = createSignal<AgentDialogState | null>(
   null,
 );
+export const [agentPicker, setAgentPicker] = createSignal<PaneRef | null>(null);
 export const [settingsOpen, setSettingsOpen] = createSignal(false);
 export const [paletteOpen, setPaletteOpen] = createSignal(false);
 
@@ -19,6 +20,12 @@ export function openAgentDialog(existing?: AgentDef, targetPane?: PaneRef) {
 }
 export function closeAgentDialog() {
   setAgentDialog(null);
+}
+export function openAgentPicker(targetPane: PaneRef) {
+  setAgentPicker(targetPane);
+}
+export function closeAgentPicker() {
+  setAgentPicker(null);
 }
 export function openSettingsDialog() {
   setSettingsOpen(true);

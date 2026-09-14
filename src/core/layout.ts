@@ -74,6 +74,17 @@ export function locateAgent(id: string): PaneRef | null {
   return null;
 }
 
+/** Short human label for where a pane sits in the grid (for pickers/lists). */
+export function paneLabel(loc: PaneRef | null): string {
+  if (!loc) return "off grid";
+  const cols = config.columns.length > 1;
+  const rows = config.columns[loc.ci].panes.length > 1;
+  if (cols && rows) return `col ${loc.ci + 1} · pane ${loc.pi + 1}`;
+  if (cols) return `col ${loc.ci + 1}`;
+  if (rows) return `pane ${loc.pi + 1}`;
+  return "grid";
+}
+
 /** Directory a new shell in this pane should open in: reuse a sibling's cwd. */
 export function paneCwd(pane: Pane | undefined): string {
   for (const id of pane?.agentIds ?? []) {

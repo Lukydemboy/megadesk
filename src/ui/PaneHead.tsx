@@ -1,4 +1,11 @@
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createResource,
+  createSignal,
+  onCleanup,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 import { invoke } from "@tauri-apps/api/core";
 import type { Pane } from "../core/types";
@@ -10,9 +17,9 @@ import {
   setFocusedPane,
   zoomedPane,
 } from "../core/store";
-import { baseName, paneCwd, toggleZoom } from "../core/layout";
-import { closeTab, newShellInPane, upsertAgent } from "../core/agents";
-import { openAgentDialog } from "./overlays";
+import { paneCwd, toggleZoom } from "../core/layout";
+import { closeTab, upsertAgent } from "../core/agents";
+import { openAgentPicker } from "./overlays";
 import { Icon } from "./icons";
 import {
   TAB_DND,
@@ -40,56 +47,147 @@ export function PaneHead(props: { ci: number; pi: number; pane: Pane }) {
         </For>
       </div>
 
-      <PaneMenu ci={props.ci} pi={props.pi} pane={props.pane} />
-
       <Show when={props.pane.agentIds.length}>
-        <button
-          class="pane-btn"
-          title={
-            zoomedPane()
-              ? "Restore the split (Cmd/Ctrl+Enter)"
-              : "Zoom this pane (Cmd/Ctrl+Enter)"
-          }
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleZoom({ ci: props.ci, pi: props.pi });
-          }}
-        >
-          <Icon name={zoomedPane() ? "unzoom" : "zoom"} />
-        </button>
-        <button
-          class="pane-btn"
-          title={`Open ${paneCwd(props.pane)} in Zed`}
-          onClick={() => void invoke("open_in_zed", { path: paneCwd(props.pane) })}
-        >
-          z
-        </button>
+        <PaneBranch pane={props.pane} />
       </Show>
+      <PaneActions ci={props.ci} pi={props.pi} pane={props.pane} activeDef={activeDef} />
+    </div>
+  );
+}
 
-      <Show when={activeDef()}>
-        {(def) => (
-          <>
+const BRANCH_POLL_MS = 2000;
+
+function PaneBranch(props: { pane: Pane }) {
+  const cwd = () => paneCwd(props.pane);
+  const [branch, { refetch }] = createResource(cwd, (path) =>
+    invoke<string | null>("git_branch", { path }),
+  );
+
+  const timer = setInterval(() => void refetch(), BRANCH_POLL_MS);
+  onCleanup(() => clearInterval(timer));
+
+  return (
+    <Show when={branch()}>
+      <span class="pane-branch" title={`Branch of ${cwd()}`}>
+        ⎇ {branch()}
+      </span>
+    </Show>
+  );
+}
+
+function PaneActions(props: {
+  ci: number;
+  pi: number;
+  pane: Pane;
+  activeDef: () => ReturnType<typeof config.agents.find>;
+}) {
+  const [open, setOpen] = createSignal(false);
+  let anchor!: HTMLButtonElement;
+  const [pos, setPos] = createSignal({ left: 0, top: 0 });
+
+  const close = () => {
+    setOpen(false);
+    document.removeEventListener("mousedown", onDoc, true);
+  };
+  const onDoc = (e: MouseEvent) => {
+    if (!(e.target instanceof Node) || !menuEl?.contains(e.target)) close();
+  };
+  let menuEl: HTMLDivElement | undefined;
+
+  onCleanup(() => document.removeEventListener("mousedown", onDoc, true));
+
+  const toggle = () => {
+    if (open()) return close();
+    setFocusedPane({ ci: props.ci, pi: props.pi });
+    const r = anchor.getBoundingClientRect();
+    setPos({ left: r.right, top: r.bottom + 4 });
+    setOpen(true);
+    setTimeout(() => document.addEventListener("mousedown", onDoc, true), 0);
+  };
+
+  return (
+    <>
+      <button
+        ref={anchor}
+        class="pane-btn"
+        title="Pane actions"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggle();
+        }}
+      >
+        <Icon name="more" />
+      </button>
+      <Show when={open()}>
+        <Portal>
+          <div
+            ref={menuEl}
+            class="popmenu"
+            style={{ left: `${pos().left}px`, top: `${pos().top}px`, transform: "translateX(-100%)" }}
+          >
             <button
-              class="pane-btn"
-              title="Restart this terminal"
+              class="popmenu-item"
               onClick={() => {
-                const s = mgr.sessions.get(def().id);
-                if (s) void s.restart(mgr);
+                close();
+                openAgentPicker({ ci: props.ci, pi: props.pi });
               }}
             >
-              <Icon name="restart" />
+              <Icon name="plus" />
+              Add agent…
             </button>
-            <button
-              class="pane-btn"
-              title="Stop this terminal"
-              onClick={() => void mgr.sessions.get(def().id)?.kill()}
-            >
-              <Icon name="stop" />
-            </button>
-          </>
-        )}
+            <Show when={props.pane.agentIds.length}>
+              <button
+                class="popmenu-item"
+                onClick={() => {
+                  close();
+                  toggleZoom({ ci: props.ci, pi: props.pi });
+                }}
+              >
+                <Icon name={zoomedPane() ? "unzoom" : "zoom"} />
+                {zoomedPane() ? "Restore the split" : "Zoom this pane"}
+              </button>
+              <button
+                class="popmenu-item"
+                onClick={() => {
+                  close();
+                  void invoke("open_in_zed", { path: paneCwd(props.pane) });
+                }}
+              >
+                <Icon name="open" />
+                Open in Zed
+              </button>
+            </Show>
+            <Show when={props.activeDef()}>
+              {(def) => (
+                <>
+                  <button
+                    class="popmenu-item"
+                    onClick={() => {
+                      close();
+                      const s = mgr.sessions.get(def().id);
+                      if (s) void s.restart(mgr);
+                    }}
+                  >
+                    <Icon name="restart" />
+                    Restart this terminal
+                  </button>
+                  <button
+                    class="popmenu-item"
+                    onClick={() => {
+                      close();
+                      void mgr.sessions.get(def().id)?.kill();
+                    }}
+                  >
+                    <Icon name="stop" />
+                    Stop this terminal
+                  </button>
+                </>
+              )}
+            </Show>
+          </div>
+        </Portal>
       </Show>
-    </div>
+    </>
   );
 }
 
@@ -228,72 +326,3 @@ function PaneTab(props: { ci: number; pi: number; pane: Pane; id: string }) {
   );
 }
 
-function PaneMenu(props: { ci: number; pi: number; pane: Pane }) {
-  const [open, setOpen] = createSignal(false);
-  let anchor!: HTMLButtonElement;
-  const [pos, setPos] = createSignal({ left: 0, top: 0 });
-
-  const close = () => {
-    setOpen(false);
-    document.removeEventListener("mousedown", onDoc, true);
-  };
-  const onDoc = (e: MouseEvent) => {
-    if (!(e.target instanceof Node) || !menuEl?.contains(e.target)) close();
-  };
-  let menuEl: HTMLDivElement | undefined;
-
-  onCleanup(() => document.removeEventListener("mousedown", onDoc, true));
-
-  const toggle = () => {
-    if (open()) return close();
-    setFocusedPane({ ci: props.ci, pi: props.pi });
-    const r = anchor.getBoundingClientRect();
-    setPos({ left: r.left, top: r.bottom + 4 });
-    setOpen(true);
-    setTimeout(() => document.addEventListener("mousedown", onDoc, true), 0);
-  };
-
-  return (
-    <>
-      <button
-        ref={anchor}
-        class="pane-btn"
-        title="Add terminal to this pane"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggle();
-        }}
-      >
-        <Icon name="plus" />
-      </button>
-      <Show when={open()}>
-        <Portal>
-          <div
-            ref={menuEl}
-            class="popmenu"
-            style={{ left: `${pos().left}px`, top: `${pos().top}px` }}
-          >
-            <button
-              class="popmenu-item"
-              onClick={() => {
-                close();
-                newShellInPane({ ci: props.ci, pi: props.pi });
-              }}
-            >
-              + Shell in {baseName(paneCwd(props.pane))}/
-            </button>
-            <button
-              class="popmenu-item"
-              onClick={() => {
-                close();
-                openAgentDialog(undefined, { ci: props.ci, pi: props.pi });
-              }}
-            >
-              + New agent…
-            </button>
-          </div>
-        </Portal>
-      </Show>
-    </>
-  );
-}

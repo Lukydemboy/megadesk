@@ -119,6 +119,26 @@ fn open_url(url: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Current branch of the git repo at `path`, or `None` if it's not inside
+/// one (or has no commits/branch yet).
+#[tauri::command]
+fn git_branch(path: String) -> Option<String> {
+    let out = std::process::Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(path)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let branch = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if branch.is_empty() {
+        None
+    } else {
+        Some(branch)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -146,6 +166,7 @@ pub fn run() {
             login_shell,
             open_in_zed,
             open_url,
+            git_branch,
             save_dropped_file,
             pty::spawn_agent,
             pty::write_agent,
