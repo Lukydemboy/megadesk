@@ -55,11 +55,16 @@ export function PaneHead(props: { ci: number; pi: number; pane: Pane }) {
   );
 }
 
+const BRANCH_POLL_MS = 2000;
+
 function PaneBranch(props: { pane: Pane }) {
   const cwd = () => paneCwd(props.pane);
-  const [branch] = createResource(cwd, (path) =>
+  const [branch, { refetch }] = createResource(cwd, (path) =>
     invoke<string | null>("git_branch", { path }),
   );
+
+  const timer = setInterval(() => void refetch(), BRANCH_POLL_MS);
+  onCleanup(() => clearInterval(timer));
 
   return (
     <Show when={branch()}>
