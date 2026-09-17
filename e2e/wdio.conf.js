@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,5 +57,9 @@ export const config = {
     if (passed) return;
     const name = `${test.parent} -- ${test.title}`.replace(/[^\w-]+/g, "_");
     await browser.saveScreenshot(path.join(screenshotsDir, `FAILED-${name}.png`));
+    // The screenshot only shows what rendered; the DOM itself (including any
+    // "Failed to start: ..." fallback text from main.tsx) is what tells us why.
+    const source = await browser.getPageSource();
+    writeFileSync(path.join(screenshotsDir, `FAILED-${name}.html`), source);
   },
 };
