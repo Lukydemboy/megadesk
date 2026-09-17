@@ -1,3 +1,6 @@
+import path from "node:path";
+import { screenshotsDir } from "../wdio.conf.js";
+
 describe("Megadesk smoke test", () => {
   it("launches and renders the topbar", async () => {
     const brand = await $(".brand");
@@ -30,6 +33,10 @@ describe("Megadesk smoke test", () => {
         timeout: 15000,
         timeoutMsg: "expected the echoed text to appear in the terminal",
       },
+    );
+
+    await browser.saveScreenshot(
+      path.join(screenshotsDir, "agent-output.png"),
     );
   });
 });

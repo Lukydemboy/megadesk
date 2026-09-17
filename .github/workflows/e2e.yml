@@ -76,3 +76,11 @@ jobs:
         # @wdio/local-runner manages Xvfb itself on Linux (via @wdio/xvfb) when
         # no DISPLAY is set, as long as the xvfb package (installed above) is present.
         run: npm run test:e2e
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: e2e/screenshots
+          if-no-files-found: ignore
