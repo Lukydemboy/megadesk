@@ -1,0 +1,78 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    # tauri-driver resolves the agent's shell through $SHELL (see src-tauri/src/pty.rs);
+    # runner processes don't have one set, and it falls back to /bin/zsh, which
+    # isn't installed here.
+    env:
+      SHELL: /bin/bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            webkit2gtk-driver \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libgtk-3-dev \
+            build-essential \
+            xvfb \
+            curl \
+            wget \
+            file
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Cache tauri-driver
+        id: cache-tauri-driver
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tauri-driver
+          key: tauri-driver-${{ runner.os }}-v1
+
+      - name: Install tauri-driver
+        if: steps.cache-tauri-driver.outputs.cache-hit != 'true'
+        run: cargo install tauri-driver --locked
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build app (debug)
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      - name: Run E2E tests
+        # @wdio/local-runner manages Xvfb itself on Linux (via @wdio/xvfb) when
+        # no DISPLAY is set, as long as the xvfb package (installed above) is present.
+        run: npm run test:e2e

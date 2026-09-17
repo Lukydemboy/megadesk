@@ -43,6 +43,7 @@ export function TextField(props: {
   placeholder?: string;
   type?: string;
   step?: string;
+  testId?: string;
 }) {
   return (
     <Field label={props.label}>
@@ -53,6 +54,7 @@ export function TextField(props: {
         value={props.value}
         placeholder={props.placeholder ?? ""}
         onInput={(e) => props.onInput(e.currentTarget.value)}
+        data-testid={props.testId}
       />
     </Field>
   );

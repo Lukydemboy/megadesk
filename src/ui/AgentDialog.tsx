@@ -70,7 +70,7 @@ function AgentDialogForm(props: { state: AgentDialogState }) {
               Delete
             </button>
           </Show>
-          <button class="primary-btn" onClick={save}>
+          <button class="primary-btn" onClick={save} data-testid="agent-save-button">
             {editing ? "Save" : "Add"}
           </button>
         </>
@@ -81,18 +81,21 @@ function AgentDialogForm(props: { state: AgentDialogState }) {
         value={def.name}
         placeholder="e.g. Backend agent"
         onInput={(v) => setDef("name", v)}
+        testId="agent-name-input"
       />
       <TextField
         label="Command"
         value={def.command}
         placeholder="claude"
         onInput={(v) => setDef("command", v)}
+        testId="agent-command-input"
       />
       <TextField
         label="Arguments (space-separated)"
         value={def.args.join(" ")}
         placeholder="--model sonnet"
         onInput={(v) => setDef("args", v.trim() ? v.trim().split(/\s+/) : [])}
+        testId="agent-args-input"
       />
       <PathField
         label="Working directory"
