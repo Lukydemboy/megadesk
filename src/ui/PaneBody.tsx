@@ -39,7 +39,7 @@ export function PaneBody(props: { pane: Pane }) {
       <Show when={!props.pane.activeId}>
         <div class="pane-placeholder">Add a terminal with +</div>
       </Show>
-      <div class="term-mount" ref={mount} />
+      <div class="term-mount" ref={mount} data-testid="term-mount" />
     </div>
   );
 }

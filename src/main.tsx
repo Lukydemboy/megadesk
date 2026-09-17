@@ -51,4 +51,8 @@ async function boot() {
   installKeys();
 }
 
-void boot();
+boot().catch((err) => {
+  console.error("boot failed", err);
+  const app = document.getElementById("app");
+  if (app) app.textContent = `Failed to start: ${err?.message ?? err}`;
+});
