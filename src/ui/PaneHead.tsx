@@ -19,7 +19,8 @@ import {
 } from "../core/store";
 import { paneCwd, toggleZoom } from "../core/layout";
 import { closeTab, upsertAgent } from "../core/agents";
-import { openAgentPicker } from "./overlays";
+import { openAgentPicker, openBranchesDialog } from "./overlays";
+import { showToast } from "./Toasts";
 import { Icon } from "./icons";
 import {
   TAB_DND,
@@ -66,11 +67,113 @@ function PaneBranch(props: { pane: Pane }) {
   const timer = setInterval(() => void refetch(), BRANCH_POLL_MS);
   onCleanup(() => clearInterval(timer));
 
+  const [open, setOpen] = createSignal(false);
+  let anchor!: HTMLButtonElement;
+  const [pos, setPos] = createSignal({ left: 0, top: 0 });
+
+  const [recent] = createResource(
+    () => (open() ? cwd() : undefined),
+    (path) => invoke<string[]>("git_recent_branches", { path }),
+  );
+
+  const close = () => {
+    setOpen(false);
+    document.removeEventListener("mousedown", onDoc, true);
+  };
+  const onDoc = (e: MouseEvent) => {
+    if (!(e.target instanceof Node) || !menuEl?.contains(e.target)) close();
+  };
+  let menuEl: HTMLDivElement | undefined;
+
+  onCleanup(() => document.removeEventListener("mousedown", onDoc, true));
+
+  const toggle = () => {
+    if (open()) return close();
+    const r = anchor.getBoundingClientRect();
+    setPos({ left: r.right, top: r.bottom + 4 });
+    setOpen(true);
+    setTimeout(() => document.addEventListener("mousedown", onDoc, true), 0);
+  };
+
+  const copyBranch = async () => {
+    const name = branch();
+    if (!name) return;
+    try {
+      await navigator.clipboard.writeText(name);
+      showToast(`Copied "${name}"`);
+    } catch {
+      showToast("Couldn't copy branch name", "warn");
+    }
+    close();
+  };
+
+  const switchTo = async (target: string) => {
+    close();
+    try {
+      await invoke("git_switch_branch", { path: cwd(), branch: target });
+      void refetch();
+    } catch (e) {
+      showToast(`Couldn't switch to "${target}": ${e}`, "warn");
+    }
+  };
+
   return (
     <Show when={branch()}>
-      <span class="pane-branch" title={`Branch of ${cwd()}`}>
+      <button
+        ref={anchor}
+        class="pane-branch"
+        title={`Branch of ${cwd()} — click to switch`}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggle();
+        }}
+      >
         ⎇ {branch()}
-      </span>
+      </button>
+      <Show when={open()}>
+        <Portal>
+          <div
+            ref={menuEl}
+            class="popmenu"
+            style={{ left: `${pos().left}px`, top: `${pos().top}px`, transform: "translateX(-100%)" }}
+          >
+            <button class="popmenu-item" onClick={() => void copyBranch()}>
+              <Icon name="copy" />
+              Copy branch name
+            </button>
+            <div class="popmenu-sep">Switch to</div>
+            <Show
+              when={!recent.loading}
+              fallback={<div class="popmenu-item popmenu-empty">Loading…</div>}
+            >
+              <For each={recent()}>
+                {(name) => (
+                  <button
+                    class="popmenu-item"
+                    onClick={() => void switchTo(name)}
+                  >
+                    {name}
+                  </button>
+                )}
+              </For>
+              <Show when={recent()?.length === 0}>
+                <div class="popmenu-item popmenu-empty">No other branches</div>
+              </Show>
+            </Show>
+            <div class="popmenu-sep-line" />
+            <button
+              class="popmenu-item"
+              onClick={() => {
+                close();
+                openBranchesDialog(cwd());
+              }}
+            >
+              <Icon name="gear" />
+              Manage branches…
+            </button>
+          </div>
+        </Portal>
+      </Show>
     </Show>
   );
 }

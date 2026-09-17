@@ -1,17 +1,61 @@
 :root {
-  --bg: #d7d3c4;
-  --panel: #f4f1e6;
-  --panel-2: #ffffff;
-  --ink: #111111;
-  --border: #111111;
-  --text: #111111;
-  --muted: #6c675a;
-  --accent: #c17aff;
-  --attn: #ffd21f;
-  --ok: #33d17a;
-  --danger: #ff5a52;
+  --bg: #F1EFE6;
+  --panel: #FAF9F3;
+  --panel-2: #FFFFFF;
+  --ink: #1B211D;
+  --border: #E1DED2;
+  --text: #1B211D;
+  --muted: #83897C;
+  --accent: #2E6B57;
+  --attn: #C98A33;
+  --ok: #4C8F63;
+  --danger: #B24A34;
   --term-bg: #14161b;
-  --shadow: #111111;
+  --shadow-sm: 0 1px 2px rgba(27, 33, 29, 0.06);
+  --shadow-md: 0 4px 12px rgba(27, 33, 29, 0.08);
+  --shadow-lg: 0 20px 48px rgba(27, 33, 29, 0.16), 0 2px 6px rgba(27, 33, 29, 0.06);
+  --accent-soft: #E4EEE9;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+}
+
+/* Dark UI theme: "system" (no attribute) follows prefers-color-scheme;
+   an explicit choice in Settings sets data-theme and wins either way. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14160F;
+    --panel: #1B1E17;
+    --panel-2: #23271F;
+    --ink: #ECEAE0;
+    --border: #33372E;
+    --text: #ECEAE0;
+    --muted: #9CA296;
+    --accent: #6FB89B;
+    --attn: #D9A257;
+    --ok: #7BB98F;
+    --danger: #D57A61;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.42);
+    --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --accent-soft: #2C3A32;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14160F;
+  --panel: #1B1E17;
+  --panel-2: #23271F;
+  --ink: #ECEAE0;
+  --border: #33372E;
+  --text: #ECEAE0;
+  --muted: #9CA296;
+  --accent: #6FB89B;
+  --attn: #D9A257;
+  --ok: #7BB98F;
+  --danger: #D57A61;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --accent-soft: #2C3A32;
 }
 
 /* Light terminal theme: the pane chrome sits on white behind the xterm. */
@@ -33,7 +77,7 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font: 550 13px/1.4 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+  font: 440 13px/1.4 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
   overflow: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
@@ -51,16 +95,15 @@ body {
   gap: 12px;
   padding: 8px 12px;
   background: var(--panel);
-  border-bottom: 3px solid var(--ink);
+  border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
 .topbar button {
   -webkit-app-region: no-drag;
 }
 .brand {
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.5px;
-  text-transform: uppercase;
   padding-left: 64px;
 }
 .presets {
@@ -73,21 +116,19 @@ body {
   justify-content: center;
   width: 28px;
   height: 26px;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--ink);
   cursor: pointer;
-  font-weight: 800;
-  box-shadow: 2px 2px 0 var(--shadow);
-  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  font-weight: 600;
+  transition: transform 80ms ease, background 80ms ease;
 }
 .preset-btn:hover {
-  background: var(--accent);
+  background: var(--accent-soft);
 }
 .preset-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: scale(0.97);
 }
 .spacer {
   flex: 1;
@@ -98,21 +139,19 @@ body {
   justify-content: center;
   height: 28px;
   padding: 0 12px;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 560;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--shadow);
-  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  transition: transform 80ms ease, background 80ms ease;
 }
 .ghost-btn:hover {
-  background: var(--accent);
+  background: var(--accent-soft);
 }
 .ghost-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: scale(0.97);
 }
 /* icon-only ghost button (⚙) */
 .ghost-btn.icon-btn {
@@ -143,16 +182,16 @@ body {
   width: 210px;
   flex-shrink: 0;
   background: var(--panel);
-  border-right: 3px solid var(--ink);
+  border-right: 1px solid var(--border);
   padding: 10px;
   overflow-y: auto;
 }
 .side-title {
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--ink);
+  color: var(--muted);
   padding: 4px 4px 10px;
 }
 .side-empty {
@@ -165,8 +204,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border: 2px solid transparent;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   margin-bottom: 6px;
 }
@@ -175,33 +214,31 @@ body {
 }
 .agent-row:hover {
   background: var(--panel-2);
-  border-color: var(--ink);
-  box-shadow: 3px 3px 0 var(--shadow);
+  border-color: var(--border);
 }
 .agent-row.dragging {
   opacity: 0.4;
 }
 .agent-row.attn {
-  background: var(--attn);
-  border-color: var(--ink);
-  box-shadow: 3px 3px 0 var(--shadow);
+  background: var(--accent-soft);
+  border-color: var(--attn);
 }
 .agent-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 560;
 }
 .attn-badge {
   display: none;
   width: 16px;
   height: 16px;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 600;
   font-size: 11px;
   text-align: center;
   line-height: 12px;
@@ -216,7 +253,7 @@ body {
   color: var(--ink);
   cursor: pointer;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .agent-row:hover .row-edit {
   opacity: 1;
@@ -225,8 +262,8 @@ body {
 .status-dot {
   width: 10px;
   height: 10px;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--panel-2);
   flex-shrink: 0;
 }
@@ -265,12 +302,12 @@ body {
   flex-direction: column;
   min-height: 0;
   flex-basis: 0;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--border);
   margin: 4px;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--term-bg);
-  box-shadow: 4px 4px 0 var(--shadow);
+  box-shadow: var(--shadow-md);
 }
 .pane-head {
   display: flex;
@@ -278,7 +315,7 @@ body {
   gap: 6px;
   padding: 6px 8px;
   background: var(--panel);
-  border-bottom: 3px solid var(--ink);
+  border-bottom: 1px solid var(--border);
 }
 .pane.drop-target {
   outline: 3px dashed var(--accent);
@@ -293,23 +330,24 @@ body {
   padding: 4px;
   text-align: center;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--ink);
-  background: var(--accent);
-  border: 2px solid var(--ink);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
   pointer-events: none;
 }
 .pane-select {
   flex: 1;
   background: var(--panel-2);
   color: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 4px 6px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 560;
 }
 
 /* pane tabs */
@@ -339,19 +377,22 @@ body {
   min-width: 44px;
   max-width: 190px;
   padding: 3px 6px;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--ink);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 560;
   cursor: pointer;
 }
 .pane-tab.active {
-  background: var(--accent);
-  box-shadow: 2px 2px 0 var(--shadow);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .pane-tab.attn {
-  background: var(--attn);
+  background: var(--accent-soft);
+  border-color: var(--attn);
 }
 .pane-tab[draggable="true"] {
   cursor: grab;
@@ -360,10 +401,10 @@ body {
   opacity: 0.4;
 }
 .pane-tab.drop-before {
-  box-shadow: inset 3px 0 0 var(--ink);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .pane-tab.drop-after {
-  box-shadow: inset -3px 0 0 var(--ink);
+  box-shadow: inset -3px 0 0 var(--accent);
 }
 .pane-tab-name {
   min-width: 0;
@@ -374,12 +415,12 @@ body {
 .pane-tab-edit {
   min-width: 0;
   width: 9em;
-  border: 2px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 560;
   padding: 0 3px;
 }
 .pane-tab-edit:focus {
@@ -393,7 +434,7 @@ body {
   border: none;
   background: transparent;
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 600;
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -410,8 +451,9 @@ body {
   z-index: 60;
   min-width: 200px;
   background: var(--panel-2);
-  border: 3px solid var(--ink);
-  box-shadow: 6px 6px 0 var(--shadow);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   padding: 4px;
@@ -420,13 +462,18 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: none;
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 560;
   text-align: left;
   padding: 7px 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 .popmenu-item .icon {
@@ -434,15 +481,22 @@ body {
   height: 15px;
 }
 .popmenu-item:hover {
-  background: var(--accent);
+  background: var(--accent-soft);
 }
 .popmenu-sep {
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
   padding: 8px 8px 3px;
+}
+.popmenu-empty {
+  color: var(--muted);
+  cursor: default;
+}
+.popmenu-empty:hover {
+  background: transparent;
 }
 .pane-branch {
   flex-shrink: 0;
@@ -452,7 +506,16 @@ body {
   white-space: nowrap;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 560;
+  font: inherit;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.pane-branch:hover {
+  color: var(--ink);
+  text-decoration: underline;
 }
 .pane-btn {
   display: inline-flex;
@@ -461,23 +524,21 @@ body {
   width: 28px;
   height: 28px;
   padding: 0;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--ink);
   font-size: 16px;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--shadow);
-  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  transition: transform 80ms ease, background 80ms ease;
 }
 .pane-btn:hover {
-  background: var(--accent);
+  background: var(--accent-soft);
 }
 .pane-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: scale(0.97);
 }
 .pane-body {
   flex: 1;
@@ -496,6 +557,25 @@ body {
 .term-host .xterm {
   height: 100%;
 }
+/* xterm's own scroll container; unstyled it falls back to an opaque
+   white OS scrollbar that sits on top of the dark pane and clips text. */
+.term-host .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.term-host .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+.term-host .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.term-host .xterm-viewport::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: var(--radius-sm);
+}
+.term-host .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
 .term-host.file-drop::after {
   content: "Drop file — its path is typed in";
   position: absolute;
@@ -510,7 +590,7 @@ body {
   border: 3px dashed var(--accent);
   color: #ffffff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   pointer-events: none;
@@ -523,7 +603,7 @@ body {
   height: 100%;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 560;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -542,7 +622,7 @@ body {
   cursor: row-resize;
 }
 .gutter:hover {
-  background: var(--ink);
+  background: var(--accent);
 }
 
 /* dialogs */
@@ -558,18 +638,18 @@ body {
 .dialog {
   width: 380px;
   background: var(--panel-2);
-  border: 3px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 8px 8px 0 var(--shadow);
+  box-shadow: var(--shadow-lg);
 }
 .dialog-title {
   padding: 14px 16px;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-weight: 700;
   letter-spacing: 0.5px;
-  border-bottom: 3px solid var(--ink);
-  background: var(--accent);
+  border-bottom: 1px solid var(--border);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .dialog-body {
   padding: 16px;
@@ -587,7 +667,7 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  border-top: 3px solid var(--ink);
+  border-top: 1px solid var(--border);
 }
 .field {
   display: flex;
@@ -596,22 +676,22 @@ body {
 }
 .field-label {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ink);
 }
 .field-input {
   background: var(--panel-2);
-  border: 2px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 8px 9px;
   color: var(--ink);
   font: inherit;
 }
 .field-input:focus {
   outline: none;
-  box-shadow: 3px 3px 0 var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent);
 }
 .field-row {
   display: flex;
@@ -623,23 +703,21 @@ body {
 }
 .browse-btn {
   flex-shrink: 0;
-  border: 2px solid var(--ink);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 560;
   padding: 0 10px;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--shadow);
-  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  transition: transform 80ms ease, background 80ms ease;
 }
 .browse-btn:hover {
-  background: var(--accent);
+  background: var(--accent-soft);
 }
 .browse-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: scale(0.97);
 }
 select.field-input {
   cursor: pointer;
@@ -651,35 +729,134 @@ select.field-input {
   align-items: center;
   gap: 9px;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 560;
 }
 .primary-btn,
 .danger-btn {
   height: 32px;
   padding: 0 16px;
-  border-radius: 0;
-  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   cursor: pointer;
   font: inherit;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 3px 3px 0 var(--shadow);
-  transition: transform 0.05s, box-shadow 0.05s;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: transform 80ms ease, background 80ms ease;
 }
 .primary-btn:active,
 .danger-btn:active {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: scale(0.97);
 }
 .primary-btn {
   background: var(--accent);
-  color: var(--ink);
+  color: var(--panel-2);
+  border-color: var(--accent);
 }
 .danger-btn {
   background: var(--danger);
-  color: var(--ink);
+  color: var(--panel-2);
+  border-color: var(--danger);
   margin-right: auto;
+}
+.popmenu-sep-line {
+  height: 1px;
+  margin: 4px 4px;
+  background: var(--border);
+}
+
+/* manage-branches dialog */
+.dialog-wide {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+}
+.branch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+  margin: -4px;
+  padding: 4px;
+}
+.branch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+}
+.branch-row:hover {
+  background: var(--accent-soft);
+}
+.branch-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.branch-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.branch-current-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+.branch-meta {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.branch-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.branch-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 80ms ease, background 80ms ease;
+}
+.branch-action-btn .icon {
+  width: 15px;
+  height: 15px;
+}
+.branch-action-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.branch-action-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.branch-action-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.branch-action-btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--panel-2);
 }
 
 /* command palette */
@@ -692,19 +869,20 @@ select.field-input {
   max-width: calc(100vw - 32px);
   margin-top: 12vh;
   background: var(--panel-2);
-  border: 3px solid var(--ink);
-  box-shadow: 8px 8px 0 var(--shadow);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .palette-input {
   border: none;
-  border-bottom: 3px solid var(--ink);
+  border-bottom: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 560;
   font-size: 15px;
   padding: 12px 14px;
 }
@@ -722,35 +900,36 @@ select.field-input {
   gap: 9px;
   padding: 8px 9px;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
 }
 .palette-row.sel {
-  background: var(--accent);
-  border-color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 .palette-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 560;
 }
 .palette-where {
   flex-shrink: 0;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--muted);
 }
 .palette-row.sel .palette-where {
-  color: var(--ink);
+  color: var(--accent);
 }
 .palette-empty {
   padding: 14px;
   text-align: center;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 560;
 }
 
 /* in-app toasts */
@@ -772,9 +951,10 @@ select.field-input {
   max-width: 320px;
   padding: 10px 12px;
   background: var(--panel-2);
-  border: 3px solid var(--ink);
-  box-shadow: 5px 5px 0 var(--shadow);
-  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-weight: 560;
   pointer-events: auto;
   transform: translateX(calc(100% + 24px));
   transition: transform 0.18s ease-out;
@@ -783,7 +963,8 @@ select.field-input {
   transform: translateX(0);
 }
 .toast-warn {
-  background: var(--attn);
+  background: var(--accent-soft);
+  border-color: var(--attn);
 }
 .toast-msg {
   flex: 1;
@@ -796,7 +977,7 @@ select.field-input {
   border: none;
   background: transparent;
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 600;
   font-size: 15px;
   line-height: 1;
   cursor: pointer;

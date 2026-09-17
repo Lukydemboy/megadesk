@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { SessionManager } from "./terminal/sessions";
 import {
   applyTerminalTheme,
+  applyUiTheme,
   config,
   loadConfig,
   setFocusedPane,
@@ -20,6 +21,7 @@ import { showToast } from "./ui/Toasts";
 async function boot() {
   await loadConfig();
   applyTerminalTheme();
+  applyUiTheme();
   try {
     setHomeDir(await invoke<string>("home_dir"));
   } catch {

@@ -117,6 +117,17 @@ export function applyTerminalTheme() {
   mgr?.applyTheme();
 }
 
+/**
+ * Push the chosen UI colour scheme to the document root. "system" removes
+ * the override entirely and leaves the CSS `prefers-color-scheme` query in
+ * charge, so it tracks OS changes live without any JS listener.
+ */
+export function applyUiTheme() {
+  const theme = config.settings.uiTheme;
+  if (theme === "system") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+}
+
 /** Nudge the terminal font size and re-apply it live. delta 0 resets. */
 export function bumpFontSize(delta: number) {
   const cur = config.settings.terminalFontSize;
