@@ -20,6 +20,10 @@ let tauriDriver;
 
 export const config = {
   runner: "local",
+  // tauri-driver listens on this address by default; WebdriverIO needs it
+  // spelled out explicitly since these capabilities have no browserName.
+  hostname: "127.0.0.1",
+  port: 4444,
   specs: ["./specs/**/*.spec.js"],
   maxInstances: 1,
   capabilities: [
