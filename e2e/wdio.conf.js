@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +10,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appBinary =
   process.env.E2E_APP_BINARY ??
   path.resolve(__dirname, "../src-tauri/target/debug/app");
+
+// CI runs this headless (Xvfb), so screenshots are the only way to see what
+// the test actually saw — uploaded as a workflow artifact by the E2E job.
+export const screenshotsDir = path.resolve(__dirname, "screenshots");
+mkdirSync(screenshotsDir, { recursive: true });
 
 let tauriDriver;
 
@@ -41,5 +47,11 @@ export const config = {
 
   afterSession: () => {
     tauriDriver?.kill();
+  },
+
+  afterTest: async (test, _context, { passed }) => {
+    if (passed) return;
+    const name = `${test.parent} -- ${test.title}`.replace(/[^\w-]+/g, "_");
+    await browser.saveScreenshot(path.join(screenshotsDir, `FAILED-${name}.png`));
   },
 };
