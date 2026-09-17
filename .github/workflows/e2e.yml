@@ -70,7 +70,13 @@ jobs:
         run: npm run build
 
       - name: Build app (debug)
-        run: cargo build --manifest-path src-tauri/Cargo.toml
+        # A plain `cargo build` skips the `custom-protocol` feature that only the
+        # Tauri CLI wires up, so the binary falls back to loading devUrl
+        # (http://localhost:1420) instead of embedding `frontendDist` — with no
+        # dev server running in CI, the webview gets "Connection refused" and
+        # #app never renders. `tauri build --debug` enables that feature;
+        # --no-bundle skips producing a .deb/.AppImage, which E2E doesn't need.
+        run: npm run tauri -- build --debug --no-bundle
 
       - name: Run E2E tests
         # @wdio/local-runner manages Xvfb itself on Linux (via @wdio/xvfb) when
