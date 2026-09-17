@@ -89,7 +89,13 @@ export function newShellInPane(ref: PaneRef) {
     id: uid(),
     name: `${baseName(shell)} · ${baseName(cwd)}`,
     command: shell,
-    args: ["-i"],
+    // Login + interactive, matching a normal terminal window: the pty is
+    // already reached via an `exec` from a login shell (see spawn_agent),
+    // but that hop is swallowed, so without `-l` here the shell that
+    // actually runs is non-login and skips ~/.bash_profile (or zsh's
+    // .zprofile/.zlogin) — which is where bash-completion et al. usually
+    // get sourced, breaking Tab completion.
+    args: ["-i", "-l"],
     cwd,
     kind: "shell",
   };
