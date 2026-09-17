@@ -1,7 +1,14 @@
 import path from "node:path";
 import { screenshotsDir } from "../wdio.conf.js";
+import { resetToBlank } from "../support/helpers.js";
 
 describe("Megadesk smoke test", () => {
+  before(async () => {
+    // Other spec files share this same on-disk config across the suite run;
+    // start from a known-blank state regardless of what ran before this file.
+    await resetToBlank();
+  });
+
   it("launches and renders the topbar", async () => {
     const brand = await $(".brand");
     await expect(brand).toHaveText("Megadesk");
