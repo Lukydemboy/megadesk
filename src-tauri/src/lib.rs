@@ -139,6 +139,237 @@ fn git_branch(path: String) -> Option<String> {
     }
 }
 
+/// The 5 most recently active local branches (by commit date) other than
+/// the one currently checked out, most recent first.
+#[tauri::command]
+fn git_recent_branches(path: String) -> Vec<String> {
+    let current = git_branch(path.clone()).unwrap_or_default();
+    let out = std::process::Command::new("git")
+        .args([
+            "for-each-ref",
+            "--sort=-committerdate",
+            "--format=%(refname:short)",
+            "refs/heads/",
+        ])
+        .current_dir(&path)
+        .output();
+    let Ok(out) = out else { return Vec::new() };
+    if !out.status.success() {
+        return Vec::new();
+    }
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(|s| s.trim().to_string())
+        .filter(|b| !b.is_empty() && *b != current)
+        .take(5)
+        .collect()
+}
+
+/// Check out an existing local branch in the git repo at `path`.
+#[tauri::command]
+fn git_switch_branch(path: String, branch: String) -> Result<(), String> {
+    let out = std::process::Command::new("git")
+        .args(["checkout", &branch])
+        .current_dir(path)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
+}
+
+/// Force-delete a local branch in the git repo at `path`. (Force, not the
+/// safe `-d`, because "Manage branches" is meant to let you clear out
+/// merged/abandoned branches without git second-guessing you — you already
+/// confirmed in the UI.)
+#[tauri::command]
+fn git_delete_branch(path: String, branch: String) -> Result<(), String> {
+    let out = std::process::Command::new("git")
+        .args(["branch", "-D", &branch])
+        .current_dir(path)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
+}
+
+#[derive(serde::Serialize)]
+struct BranchInfo {
+    name: String,
+    current: bool,
+    #[serde(rename = "commitTime")]
+    commit_time: i64,
+    #[serde(rename = "commitHash")]
+    commit_hash: String,
+    #[serde(rename = "commitSubject")]
+    commit_subject: String,
+}
+
+/// All local branches with their latest-commit info, most recently
+/// committed first.
+#[tauri::command]
+fn git_all_branches(path: String) -> Vec<BranchInfo> {
+    const SEP: &str = "\u{1f}";
+    let format = format!(
+        "%(refname:short){SEP}%(HEAD){SEP}%(committerdate:unix){SEP}%(objectname:short){SEP}%(subject)"
+    );
+    let out = std::process::Command::new("git")
+        .args([
+            "for-each-ref",
+            "--sort=-committerdate",
+            &format!("--format={format}"),
+            "refs/heads/",
+        ])
+        .current_dir(&path)
+        .output();
+    let Ok(out) = out else { return Vec::new() };
+    if !out.status.success() {
+        return Vec::new();
+    }
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|line| {
+            let mut parts = line.split(SEP);
+            let name = parts.next()?.to_string();
+            let current = parts.next()? == "*";
+            let commit_time = parts.next()?.parse().unwrap_or(0);
+            let commit_hash = parts.next()?.to_string();
+            let commit_subject = parts.next().unwrap_or("").to_string();
+            if name.is_empty() {
+                return None;
+            }
+            Some(BranchInfo {
+                name,
+                current,
+                commit_time,
+                commit_hash,
+                commit_subject,
+            })
+        })
+        .collect()
+}
+
+/// Split a `host` + `owner/repo`-ish `path` (as found in a git remote URL)
+/// into a browsable source URL for the given branch, for the hosts we know
+/// how to link into. `None` for anything unrecognised — the caller hides
+/// the button rather than guessing.
+fn branch_source_url(host: &str, repo_path: &str, branch: &str) -> Option<String> {
+    let host_l = host.to_lowercase();
+    let encoded_branch = branch.replace(' ', "%20");
+    if host_l == "github.com" {
+        return Some(format!("https://github.com/{repo_path}/tree/{encoded_branch}"));
+    }
+    if host_l == "bitbucket.org" {
+        return Some(format!("https://bitbucket.org/{repo_path}/src/{encoded_branch}"));
+    }
+    if host_l == "gitlab.com" {
+        return Some(format!("https://gitlab.com/{repo_path}/-/tree/{encoded_branch}"));
+    }
+    // Self-hosted Bitbucket Server: remote path looks like `scm/PROJECT/repo`.
+    if let Some(rest) = repo_path.strip_prefix("scm/") {
+        let mut it = rest.splitn(2, '/');
+        let project = it.next()?;
+        let repo = it.next()?;
+        return Some(format!(
+            "https://{host}/projects/{project}/repos/{repo}/browse?at=refs%2Fheads%2F{encoded_branch}"
+        ));
+    }
+    None
+}
+
+/// Parse a git remote URL (`git@host:owner/repo.git` or
+/// `https://host/owner/repo.git`) into `(host, owner/repo)`.
+fn parse_remote(remote: &str) -> Option<(String, String)> {
+    let remote = remote.trim();
+    let (host, repo_path) = if let Some(rest) = remote.strip_prefix("git@") {
+        rest.split_once(':')?
+    } else if let Some(rest) = remote
+        .strip_prefix("https://")
+        .or_else(|| remote.strip_prefix("http://"))
+        .or_else(|| remote.strip_prefix("ssh://"))
+    {
+        let rest = rest.rsplit('@').next().unwrap_or(rest); // drop user@ if present
+        let (host, path) = rest.split_once('/')?;
+        let host = host.split(':').next().unwrap_or(host); // drop :port
+        (host, path)
+    } else {
+        return None;
+    };
+    let repo_path = repo_path.trim_end_matches(".git").trim_matches('/');
+    if host.is_empty() || repo_path.is_empty() {
+        return None;
+    }
+    Some((host.to_string(), repo_path.to_string()))
+}
+
+/// The `(host, owner/repo)` of the git repo's `origin` remote at `path`, or
+/// `None` if there's no remote or it doesn't parse as one we recognise.
+fn resolve_remote(path: &str) -> Option<(String, String)> {
+    let out = std::process::Command::new("git")
+        .args(["remote", "get-url", "origin"])
+        .current_dir(path)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let remote = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    parse_remote(&remote)
+}
+
+/// A browsable URL for `branch` on the repo's `origin` remote (GitHub,
+/// Bitbucket Cloud/Server, GitLab), or `None` if there's no remote or its
+/// host isn't one we know how to link into.
+#[tauri::command]
+fn git_branch_source_url(path: String, branch: String) -> Option<String> {
+    let (host, repo_path) = resolve_remote(&path)?;
+    branch_source_url(&host, &repo_path, &branch)
+}
+
+/// A PR/merge-request creation URL for `branch` against the repo's default
+/// branch on its `origin` remote (GitHub, Bitbucket Cloud/Server, GitLab),
+/// or `None` if there's no remote or its host isn't one we know how to
+/// link into. We don't resolve the actual default branch — the host picks
+/// it as the compare target when we only give it the source.
+fn pr_url(host: &str, repo_path: &str, branch: &str) -> Option<String> {
+    let host_l = host.to_lowercase();
+    let encoded_branch = branch.replace(' ', "%20");
+    if host_l == "github.com" {
+        return Some(format!("https://github.com/{repo_path}/pull/new/{encoded_branch}"));
+    }
+    if host_l == "bitbucket.org" {
+        return Some(format!(
+            "https://bitbucket.org/{repo_path}/pull-requests/new?source={encoded_branch}&t=1"
+        ));
+    }
+    if host_l == "gitlab.com" {
+        return Some(format!(
+            "https://gitlab.com/{repo_path}/-/merge_requests/new?merge_request%5Bsource_branch%5D={encoded_branch}"
+        ));
+    }
+    // Self-hosted Bitbucket Server: remote path looks like `scm/PROJECT/repo`.
+    if let Some(rest) = repo_path.strip_prefix("scm/") {
+        let mut it = rest.splitn(2, '/');
+        let project = it.next()?;
+        let repo = it.next()?;
+        return Some(format!(
+            "https://{host}/projects/{project}/repos/{repo}/pull-requests?create&sourceBranch=refs%2Fheads%2F{encoded_branch}"
+        ));
+    }
+    None
+}
+
+#[tauri::command]
+fn git_create_pr_url(path: String, branch: String) -> Option<String> {
+    let (host, repo_path) = resolve_remote(&path)?;
+    pr_url(&host, &repo_path, &branch)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -167,6 +398,12 @@ pub fn run() {
             open_in_zed,
             open_url,
             git_branch,
+            git_recent_branches,
+            git_switch_branch,
+            git_delete_branch,
+            git_all_branches,
+            git_branch_source_url,
+            git_create_pr_url,
             save_dropped_file,
             pty::spawn_agent,
             pty::write_agent,

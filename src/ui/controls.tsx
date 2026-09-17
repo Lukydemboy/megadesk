@@ -8,6 +8,7 @@ export function Dialog(props: {
   onClose: () => void;
   children: JSX.Element;
   footer: JSX.Element;
+  wide?: boolean;
 }) {
   return (
     <div
@@ -16,7 +17,7 @@ export function Dialog(props: {
         if (e.target === e.currentTarget) props.onClose();
       }}
     >
-      <div class="dialog">
+      <div classList={{ dialog: true, "dialog-wide": !!props.wide }}>
         <div class="dialog-title">{props.title}</div>
         <div class="dialog-body">{props.children}</div>
         <div class="dialog-footer">{props.footer}</div>

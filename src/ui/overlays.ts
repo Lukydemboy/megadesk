@@ -14,6 +14,7 @@ export const [agentDialog, setAgentDialog] = createSignal<AgentDialogState | nul
 export const [agentPicker, setAgentPicker] = createSignal<PaneRef | null>(null);
 export const [settingsOpen, setSettingsOpen] = createSignal(false);
 export const [paletteOpen, setPaletteOpen] = createSignal(false);
+export const [branchesDialog, setBranchesDialog] = createSignal<string | null>(null);
 
 export function openAgentDialog(existing?: AgentDef, targetPane?: PaneRef) {
   setAgentDialog({ existing, targetPane });
@@ -35,4 +36,10 @@ export function isPaletteOpen() {
 }
 export function toggleCommandPalette() {
   setPaletteOpen((v) => !v);
+}
+export function openBranchesDialog(cwd: string) {
+  setBranchesDialog(cwd);
+}
+export function closeBranchesDialog() {
+  setBranchesDialog(null);
 }
