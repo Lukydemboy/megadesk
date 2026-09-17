@@ -21,7 +21,11 @@ export function Topbar() {
         </For>
       </div>
       <div class="spacer" />
-      <button class="ghost-btn" onClick={() => openAgentDialog()}>
+      <button
+        class="ghost-btn"
+        onClick={() => openAgentDialog()}
+        data-testid="add-agent-button"
+      >
         + Agent
       </button>
       <button
