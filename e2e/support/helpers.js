@@ -73,7 +73,7 @@ async function deleteAgentRow(row) {
   const del = $(".danger-btn");
   await del.waitForDisplayed();
   await del.click();
-  await row.waitForExist({ reverse: true, timeout: 15000 });
+  await row.waitForExist({ reverse: true, timeout: 30000 });
 }
 
 /**

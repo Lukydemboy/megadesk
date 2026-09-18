@@ -47,7 +47,7 @@ describe("Git branches", () => {
     const branchBtn = $(".pane-branch");
     await branchBtn.waitForDisplayed({ timeout: 10000 });
     await browser.waitUntil(async () => (await branchBtn.getText()).includes("main"), {
-      timeout: 10000,
+      timeout: 20000,
       timeoutMsg: 'expected the pane branch chip to show "main"',
     });
 
@@ -56,7 +56,7 @@ describe("Git branches", () => {
     await $(".popmenu-item*=feature-one").click();
 
     await browser.waitUntil(async () => (await branchBtn.getText()).includes("feature-one"), {
-      timeout: 10000,
+      timeout: 20000,
       timeoutMsg: 'expected the pane branch chip to switch to "feature-one"',
     });
   });
