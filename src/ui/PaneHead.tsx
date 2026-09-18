@@ -335,9 +335,22 @@ function PaneTab(props: { ci: number; pi: number; pane: Pane; id: string }) {
       }}
       draggable={!editing()}
       onClick={() => {
+        ((window as any).__diag ??= []).push({
+          t: "tab click",
+          propsId: props.id,
+          propsName: def()?.name,
+          isActive: isActive(),
+          paneActiveId: props.pane.activeId,
+          paneAgentIds: [...props.pane.agentIds],
+          allAgents: config.agents.map((a) => ({ id: a.id, name: a.name })),
+        });
         if (isActive()) return;
         mutate((c) => {
           c.columns[props.ci].panes[props.pi].activeId = props.id;
+        });
+        ((window as any).__diag ??= []).push({
+          t: "tab click after mutate",
+          paneActiveId: props.pane.activeId,
         });
         setFocusedPane({ ci: props.ci, pi: props.pi });
         saveConfig();
