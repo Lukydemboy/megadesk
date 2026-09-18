@@ -9,8 +9,10 @@
 export const sidebarAgentRow = (name) =>
   $(`//div[contains(@class,"agent-row")][.//div[@class="agent-name" and text()="${name}"]]`);
 
-export const paneTabByName = (name) =>
-  $(`//div[contains(@class,"pane-tab")][.//span[@class="pane-tab-name" and text()="${name}"]]`);
+const paneTabXPath = (name) =>
+  `//div[contains(@class,"pane-tab")][.//span[@class="pane-tab-name" and text()="${name}"]]`;
+
+export const paneTabByName = (name) => $(paneTabXPath(name));
 
 export const selectByLabel = (label) =>
   $(`//span[@class="field-label" and text()="${label}"]/following-sibling::select`);
@@ -24,19 +26,42 @@ export const pathInputByLabel = (label) =>
   );
 
 /**
- * Click/double-click via a real DOM dispatch instead of WebDriver's
- * coordinate-based click. Some elements (draggable pane tabs, in
- * particular) don't reliably receive webkit2gtk-driver's synthetic
- * click under CI's software-rendered Xvfb.
+ * Click/double-click a pane tab by resolving the XPath and dispatching the
+ * event entirely inside the browser, instead of clicking through WebDriver
+ * or passing an element handle into execute() (whose WebElement-reference
+ * serialization is unreliable on this driver). Throws if no tab matches.
  */
-export async function jsClick(el) {
-  await browser.execute((n) => n.click(), await el);
+export async function jsClickTabByName(name) {
+  const found = await browser.execute((xp) => {
+    const el = document.evaluate(
+      xp,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null,
+    ).singleNodeValue;
+    if (!el) return false;
+    el.click();
+    return true;
+  }, paneTabXPath(name));
+  if (!found) throw new Error(`jsClickTabByName: no tab named "${name}"`);
 }
 
-export async function jsDoubleClick(el) {
-  await browser.execute((n) => {
-    n.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window }));
-  }, await el);
+export async function jsDoubleClickTabName(name) {
+  const found = await browser.execute((xp) => {
+    const tab = document.evaluate(
+      xp,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null,
+    ).singleNodeValue;
+    const nameEl = tab?.querySelector(".pane-tab-name");
+    if (!nameEl) return false;
+    nameEl.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+    return true;
+  }, paneTabXPath(name));
+  if (!found) throw new Error(`jsDoubleClickTabName: no tab named "${name}"`);
 }
 
 /** Collapse the grid to a single pane. Also drops any zoom, since

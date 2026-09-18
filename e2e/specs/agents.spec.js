@@ -1,8 +1,8 @@
 import {
   createAgentViaTopbar,
   fillAgentForm,
-  jsClick,
-  jsDoubleClick,
+  jsClickTabByName,
+  jsDoubleClickTabName,
   paneTabByName,
   resetToBlank,
   saveAgentForm,
@@ -52,7 +52,7 @@ describe("Agent and tab management", () => {
       timeoutMsg: "expected agent B's output once its tab is active",
     });
 
-    await jsClick(paneTabByName("E2E Agent A"));
+    await jsClickTabByName("E2E Agent A");
     try {
       await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
         timeout: 15000,
@@ -65,7 +65,7 @@ describe("Agent and tab management", () => {
       throw e;
     }
 
-    await jsClick(paneTabByName("E2E Agent B"));
+    await jsClickTabByName("E2E Agent B");
     await browser.waitUntil(async () => (await term.getText()).includes("agent-b-output"), {
       timeout: 15000,
       timeoutMsg: "expected agent B's scrollback after switching back to its tab",
@@ -78,7 +78,7 @@ describe("Agent and tab management", () => {
     // in case a beat is lost on a loaded CI runner.
     await browser.waitUntil(
       async () => {
-        await jsDoubleClick(paneTabByName("E2E Agent B").$(".pane-tab-name"));
+        await jsDoubleClickTabName("E2E Agent B");
         return input.isDisplayed().catch(() => false);
       },
       { timeout: 10000, interval: 500, timeoutMsg: "expected the rename input to appear" },
