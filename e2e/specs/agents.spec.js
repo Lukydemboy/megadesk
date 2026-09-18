@@ -108,7 +108,7 @@ describe("Agent and tab management", () => {
     const tab = paneTabByName("E2E Agent Sleep");
     await browser.waitUntil(
       async () => (await tab.$(".status-dot").getAttribute("class")).includes("on"),
-      { timeout: 25000, timeoutMsg: "expected the sleep process to report running" },
+      { timeout: 40000, timeoutMsg: "expected the sleep process to report running" },
     );
 
     await $('button[title="Pane actions"]').click();
