@@ -15,9 +15,11 @@ export function PaneBody(props: { pane: Pane }) {
     on(
       () => props.pane.activeId,
       (activeId) => {
+        console.log("[DIAG] PaneBody effect", { activeId });
         mount.replaceChildren();
         if (!activeId) return;
         let s = mgr.sessions.get(activeId);
+        console.log("[DIAG] PaneBody session lookup", { activeId, found: !!s });
         if (!s) {
           const def = config.agents.find((a) => a.id === activeId);
           if (!def) return;

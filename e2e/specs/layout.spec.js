@@ -1,4 +1,4 @@
-import { resetToBlank } from "../support/helpers.js";
+import { createAgentViaTopbar, resetToBlank } from "../support/helpers.js";
 
 describe("Layout presets and pane zoom", () => {
   beforeEach(async () => {
@@ -22,6 +22,9 @@ describe("Layout presets and pane zoom", () => {
   });
 
   it("zooms a pane to fill the grid via its actions menu, then restores it with Escape", async () => {
+    // Zoom/unzoom only appear in a pane's actions menu once it holds an
+    // agent — an empty pane only offers "Add agent…".
+    await createAgentViaTopbar({ name: "Zoom Fixture", command: "sleep", args: "50" });
     await $('button[title="2-pane layout"]').click();
     await expect($$(".pane")).toBeElementsArrayOfSize(2);
 

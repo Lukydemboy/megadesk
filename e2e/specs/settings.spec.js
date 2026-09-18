@@ -15,7 +15,7 @@ describe("Settings", () => {
     await resetToBlank();
 
     await $('button[title="Settings"]').click();
-    await pathInputByLabel("Default working directory").setValue("");
+    await pathInputByLabel("Default working directory").clearValue();
     await selectByLabel("Startup layout").selectByAttribute("value", "last");
     await $(".primary-btn=Done").click();
   });
