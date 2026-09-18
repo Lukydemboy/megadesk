@@ -14,6 +14,42 @@ const paneTabXPath = (name) =>
 
 export const paneTabByName = (name) => $(paneTabXPath(name));
 
+/**
+ * Poll a tab's status-dot class entirely inside the browser via
+ * requestAnimationFrame, instead of WebDriver round-tripping out to Node
+ * and back on every check. A plain browser.waitUntil() calling
+ * getAttribute() repeatedly never observed this dot turn "on" even with a
+ * generous timeout, while a screenshot taken moments after the timeout
+ * fired showed it already correct — consistent with the frequent
+ * WebDriver polling itself starving the single-process, software-rendered
+ * webview of the tick it needs to actually paint the class change.
+ */
+export async function waitForTabStatusClass(name, cls, timeoutMs) {
+  return browser.execute(
+    (xp, wantedClass, timeout) =>
+      new Promise((resolve) => {
+        const deadline = Date.now() + timeout;
+        const check = () => {
+          const tab = document.evaluate(
+            xp,
+            document,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null,
+          ).singleNodeValue;
+          const dot = tab?.querySelector(".status-dot");
+          if (dot?.className.includes(wantedClass)) return resolve(true);
+          if (Date.now() > deadline) return resolve(false);
+          requestAnimationFrame(check);
+        };
+        check();
+      }),
+    paneTabXPath(name),
+    cls,
+    timeoutMs,
+  );
+}
+
 export const selectByLabel = (label) =>
   $(`//span[@class="field-label" and text()="${label}"]/following-sibling::select`);
 
@@ -24,25 +60,6 @@ export const pathInputByLabel = (label) =>
   $(
     `//span[@class="field-label" and text()="${label}"]/following-sibling::div[@class="field-row"]/input`,
   );
-
-/** A real two-step pointer double-click via the W3C Actions API. Clicking
- *  or double-clicking a .pane-tab through WebDriver's high-level commands,
- *  or an in-page synthetic event dispatch, both reliably no-op under
- *  tauri-driver's webkit2gtk backend on CI — this drives real pointer
- *  down/up events instead. */
-export async function actionsDoubleClickTabName(name) {
-  const el = paneTabByName(name).$(".pane-tab-name");
-  await el.waitForDisplayed();
-  await browser
-    .action("pointer", { parameters: { pointerType: "mouse" } })
-    .move({ origin: await el })
-    .down({ button: 0 })
-    .up({ button: 0 })
-    .pause(60)
-    .down({ button: 0 })
-    .up({ button: 0 })
-    .perform();
-}
 
 /** Collapse the grid to a single pane. Also drops any zoom, since
  *  applyPreset() clears it. Safe to call from any layout/zoom state. */
