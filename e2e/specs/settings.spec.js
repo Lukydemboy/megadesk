@@ -1,5 +1,4 @@
 import {
-  deleteAgentByName,
   pathInputByLabel,
   resetToBlank,
   selectByLabel,
@@ -13,7 +12,7 @@ describe("Settings", () => {
   });
 
   after(async () => {
-    await deleteAgentByName("Settings CWD Probe");
+    await resetToBlank();
 
     await $('button[title="Settings"]').click();
     await pathInputByLabel("Default working directory").setValue("");

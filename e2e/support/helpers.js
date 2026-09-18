@@ -29,8 +29,7 @@ export async function resetLayout() {
   await $('button[title="1-pane layout"]').click();
 }
 
-export async function deleteAgentByName(name) {
-  const row = sidebarAgentRow(name);
+async function deleteAgentRow(row) {
   await row.waitForDisplayed();
   await row.$(".row-edit").click();
   const del = $(".danger-btn");
@@ -39,13 +38,16 @@ export async function deleteAgentByName(name) {
   await row.waitForExist({ reverse: true });
 }
 
-/** Delete every agent currently in the sidebar, killing any pty they own. */
+/**
+ * Delete every agent currently in the sidebar, killing any pty they own.
+ * Operates on the row handle directly rather than round-tripping through
+ * its name, since re-querying by name races the row's own text rendering.
+ */
 export async function clearAllAgents() {
   for (let i = 0; i < 50; i++) {
-    const rows = await $$(".agent-row .agent-name");
+    const rows = await $$(".agent-row");
     if (!rows.length) return;
-    const name = await rows[0].getText();
-    await deleteAgentByName(name);
+    await deleteAgentRow(rows[0]);
   }
   throw new Error("clearAllAgents: still finding agents after 50 deletions");
 }

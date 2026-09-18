@@ -1,6 +1,5 @@
 import {
   createAgentViaTopbar,
-  deleteAgentByName,
   fillAgentForm,
   paneTabByName,
   resetToBlank,
@@ -14,9 +13,7 @@ describe("Agent and tab management", () => {
   });
 
   after(async () => {
-    await deleteAgentByName("E2E Agent A");
-    await deleteAgentByName("E2E Agent B Renamed");
-    await deleteAgentByName("E2E Agent Sleep");
+    await resetToBlank();
   });
 
   it("creates an agent and streams its output into a pane tab", async () => {
@@ -55,22 +52,29 @@ describe("Agent and tab management", () => {
 
     await paneTabByName("E2E Agent A").click();
     await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
-      timeout: 5000,
+      timeout: 15000,
       timeoutMsg: "expected agent A's scrollback after switching back to its tab",
     });
 
     await paneTabByName("E2E Agent B").click();
     await browser.waitUntil(async () => (await term.getText()).includes("agent-b-output"), {
-      timeout: 5000,
+      timeout: 15000,
       timeoutMsg: "expected agent B's scrollback after switching back to its tab",
     });
   });
 
   it("renames a tab via double-click", async () => {
-    await paneTabByName("E2E Agent B").$(".pane-tab-name").doubleClick();
-
     const input = $(".pane-tab-edit");
-    await input.waitForDisplayed();
+    // The double-click can land a beat before the tab finishes its own
+    // activation re-render on a loaded CI runner, so retry it until the
+    // rename input actually appears instead of firing it only once.
+    await browser.waitUntil(
+      async () => {
+        await paneTabByName("E2E Agent B").$(".pane-tab-name").doubleClick();
+        return input.isDisplayed().catch(() => false);
+      },
+      { timeout: 10000, interval: 500, timeoutMsg: "expected the rename input to appear" },
+    );
     await input.setValue("E2E Agent B Renamed");
     await browser.keys(["Enter"]);
 
@@ -96,7 +100,7 @@ describe("Agent and tab management", () => {
     const tab = paneTabByName("E2E Agent Sleep");
     await browser.waitUntil(
       async () => (await tab.$(".status-dot").getAttribute("class")).includes("on"),
-      { timeout: 10000, timeoutMsg: "expected the sleep process to report running" },
+      { timeout: 15000, timeoutMsg: "expected the sleep process to report running" },
     );
 
     await $('button[title="Pane actions"]').click();

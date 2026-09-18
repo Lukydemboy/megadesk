@@ -1,4 +1,4 @@
-import { createAgentViaTopbar, deleteAgentByName, resetToBlank } from "../support/helpers.js";
+import { createAgentViaTopbar, resetToBlank } from "../support/helpers.js";
 
 describe("Command palette", () => {
   before(async () => {
@@ -16,8 +16,7 @@ describe("Command palette", () => {
   });
 
   after(async () => {
-    await deleteAgentByName("Palette Target Zulu");
-    await deleteAgentByName("Palette Other Yankee");
+    await resetToBlank();
   });
 
   it("opens with Ctrl+K, fuzzy-filters agents, and closes with Escape", async () => {

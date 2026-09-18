@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createAgentViaTopbar, deleteAgentByName, resetToBlank } from "../support/helpers.js";
+import { createAgentViaTopbar, resetToBlank } from "../support/helpers.js";
 
 function git(cwd, args) {
   execSync(`git ${args}`, { cwd, stdio: "pipe" });
@@ -39,7 +39,7 @@ describe("Git branches", () => {
   });
 
   after(async () => {
-    await deleteAgentByName("Branch Fixture Agent");
+    await resetToBlank();
     rmSync(repoDir, { recursive: true, force: true });
   });
 
