@@ -53,10 +53,17 @@ describe("Agent and tab management", () => {
     });
 
     await jsClick(paneTabByName("E2E Agent A"));
-    await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
-      timeout: 15000,
-      timeoutMsg: "expected agent A's scrollback after switching back to its tab",
-    });
+    try {
+      await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
+        timeout: 15000,
+        timeoutMsg: "expected agent A's scrollback after switching back to its tab",
+      });
+    } catch (e) {
+      const diag = await browser.execute(() => (window).__diag);
+      // eslint-disable-next-line no-console
+      console.log("[DIAG DUMP]", JSON.stringify(diag));
+      throw e;
+    }
 
     await jsClick(paneTabByName("E2E Agent B"));
     await browser.waitUntil(async () => (await term.getText()).includes("agent-b-output"), {
