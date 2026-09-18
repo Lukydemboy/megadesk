@@ -15,15 +15,9 @@ export function PaneBody(props: { pane: Pane }) {
     on(
       () => props.pane.activeId,
       (activeId) => {
-        ((window as any).__diag ??= []).push({ t: "PaneBody effect", activeId });
         mount.replaceChildren();
         if (!activeId) return;
         let s = mgr.sessions.get(activeId);
-        ((window as any).__diag ??= []).push({
-          t: "PaneBody session lookup",
-          activeId,
-          found: !!s,
-        });
         if (!s) {
           const def = config.agents.find((a) => a.id === activeId);
           if (!def) return;

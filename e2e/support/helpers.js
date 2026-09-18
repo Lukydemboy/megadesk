@@ -23,6 +23,22 @@ export const pathInputByLabel = (label) =>
     `//span[@class="field-label" and text()="${label}"]/following-sibling::div[@class="field-row"]/input`,
   );
 
+/**
+ * Click/double-click via a real DOM dispatch instead of WebDriver's
+ * coordinate-based click. Some elements (draggable pane tabs, in
+ * particular) don't reliably receive webkit2gtk-driver's synthetic
+ * click under CI's software-rendered Xvfb.
+ */
+export async function jsClick(el) {
+  await browser.execute((n) => n.click(), await el);
+}
+
+export async function jsDoubleClick(el) {
+  await browser.execute((n) => {
+    n.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window }));
+  }, await el);
+}
+
 /** Collapse the grid to a single pane. Also drops any zoom, since
  *  applyPreset() clears it. Safe to call from any layout/zoom state. */
 export async function resetLayout() {

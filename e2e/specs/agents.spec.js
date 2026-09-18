@@ -1,6 +1,8 @@
 import {
   createAgentViaTopbar,
   fillAgentForm,
+  jsClick,
+  jsDoubleClick,
   paneTabByName,
   resetToBlank,
   saveAgentForm,
@@ -50,20 +52,13 @@ describe("Agent and tab management", () => {
       timeoutMsg: "expected agent B's output once its tab is active",
     });
 
-    await paneTabByName("E2E Agent A").click();
-    try {
-      await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
-        timeout: 15000,
-        timeoutMsg: "expected agent A's scrollback after switching back to its tab",
-      });
-    } catch (e) {
-      const diag = await browser.execute(() => (window).__diag);
-      // eslint-disable-next-line no-console
-      console.log("[DIAG DUMP]", JSON.stringify(diag));
-      throw e;
-    }
+    await jsClick(paneTabByName("E2E Agent A"));
+    await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
+      timeout: 15000,
+      timeoutMsg: "expected agent A's scrollback after switching back to its tab",
+    });
 
-    await paneTabByName("E2E Agent B").click();
+    await jsClick(paneTabByName("E2E Agent B"));
     await browser.waitUntil(async () => (await term.getText()).includes("agent-b-output"), {
       timeout: 15000,
       timeoutMsg: "expected agent B's scrollback after switching back to its tab",
@@ -72,12 +67,11 @@ describe("Agent and tab management", () => {
 
   it("renames a tab via double-click", async () => {
     const input = $(".pane-tab-edit");
-    // The double-click can land a beat before the tab finishes its own
-    // activation re-render on a loaded CI runner, so retry it until the
-    // rename input actually appears instead of firing it only once.
+    // Retry the double-click until the rename input actually appears,
+    // in case a beat is lost on a loaded CI runner.
     await browser.waitUntil(
       async () => {
-        await paneTabByName("E2E Agent B").$(".pane-tab-name").doubleClick();
+        await jsDoubleClick(paneTabByName("E2E Agent B").$(".pane-tab-name"));
         return input.isDisplayed().catch(() => false);
       },
       { timeout: 10000, interval: 500, timeoutMsg: "expected the rename input to appear" },
