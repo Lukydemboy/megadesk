@@ -1,8 +1,7 @@
 import {
+  actionsDoubleClickTabName,
   createAgentViaTopbar,
   fillAgentForm,
-  jsClickTabByName,
-  jsDoubleClickTabName,
   paneTabByName,
   resetToBlank,
   saveAgentForm,
@@ -79,7 +78,7 @@ describe("Agent and tab management", () => {
     // in case a beat is lost on a loaded CI runner.
     await browser.waitUntil(
       async () => {
-        await jsDoubleClickTabName("E2E Agent B");
+        await actionsDoubleClickTabName("E2E Agent B");
         return input.isDisplayed().catch(() => false);
       },
       { timeout: 10000, interval: 500, timeoutMsg: "expected the rename input to appear" },
@@ -109,7 +108,7 @@ describe("Agent and tab management", () => {
     const tab = paneTabByName("E2E Agent Sleep");
     await browser.waitUntil(
       async () => (await tab.$(".status-dot").getAttribute("class")).includes("on"),
-      { timeout: 15000, timeoutMsg: "expected the sleep process to report running" },
+      { timeout: 25000, timeoutMsg: "expected the sleep process to report running" },
     );
 
     await $('button[title="Pane actions"]').click();

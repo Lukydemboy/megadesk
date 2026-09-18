@@ -25,43 +25,23 @@ export const pathInputByLabel = (label) =>
     `//span[@class="field-label" and text()="${label}"]/following-sibling::div[@class="field-row"]/input`,
   );
 
-/**
- * Click/double-click a pane tab by resolving the XPath and dispatching the
- * event entirely inside the browser, instead of clicking through WebDriver
- * or passing an element handle into execute() (whose WebElement-reference
- * serialization is unreliable on this driver). Throws if no tab matches.
- */
-export async function jsClickTabByName(name) {
-  const found = await browser.execute((xp) => {
-    const el = document.evaluate(
-      xp,
-      document,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null,
-    ).singleNodeValue;
-    if (!el) return false;
-    el.click();
-    return true;
-  }, paneTabXPath(name));
-  if (!found) throw new Error(`jsClickTabByName: no tab named "${name}"`);
-}
-
-export async function jsDoubleClickTabName(name) {
-  const found = await browser.execute((xp) => {
-    const tab = document.evaluate(
-      xp,
-      document,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null,
-    ).singleNodeValue;
-    const nameEl = tab?.querySelector(".pane-tab-name");
-    if (!nameEl) return false;
-    nameEl.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
-    return true;
-  }, paneTabXPath(name));
-  if (!found) throw new Error(`jsDoubleClickTabName: no tab named "${name}"`);
+/** A real two-step pointer double-click via the W3C Actions API. Clicking
+ *  or double-clicking a .pane-tab through WebDriver's high-level commands,
+ *  or an in-page synthetic event dispatch, both reliably no-op under
+ *  tauri-driver's webkit2gtk backend on CI — this drives real pointer
+ *  down/up events instead. */
+export async function actionsDoubleClickTabName(name) {
+  const el = paneTabByName(name).$(".pane-tab-name");
+  await el.waitForDisplayed();
+  await browser
+    .action("pointer", { parameters: { pointerType: "mouse" } })
+    .move({ origin: await el })
+    .down({ button: 0 })
+    .up({ button: 0 })
+    .pause(60)
+    .down({ button: 0 })
+    .up({ button: 0 })
+    .perform();
 }
 
 /** Collapse the grid to a single pane. Also drops any zoom, since
