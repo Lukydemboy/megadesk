@@ -52,20 +52,21 @@ describe("Agent and tab management", () => {
       timeoutMsg: "expected agent B's output once its tab is active",
     });
 
-    await jsClickTabByName("E2E Agent A");
-    try {
-      await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
-        timeout: 15000,
-        timeoutMsg: "expected agent A's scrollback after switching back to its tab",
-      });
-    } catch (e) {
-      const diag = await browser.execute(() => (window).__diag);
-      // eslint-disable-next-line no-console
-      console.log("[DIAG DUMP]", JSON.stringify(diag));
-      throw e;
-    }
+    // Switch tabs via the Cmd/Ctrl+1/2 shortcut (selectTabByIndex) rather
+    // than clicking the tab: clicking/double-clicking a .pane-tab element
+    // reliably no-ops under tauri-driver's webkit2gtk backend on CI (no
+    // app-level handler runs at all — confirmed via a window.__diag probe
+    // that stayed empty across a WebDriver click, a native el.click(), and
+    // an in-page XPath-driven click), while every other click in this
+    // suite (buttons, sidebar rows) works fine. The shortcut exercises the
+    // same activeId switch through a real, keyboard-only code path.
+    await browser.keys(["Control", "1"]);
+    await browser.waitUntil(async () => (await term.getText()).includes("agent-a-output"), {
+      timeout: 15000,
+      timeoutMsg: "expected agent A's scrollback after switching back to its tab",
+    });
 
-    await jsClickTabByName("E2E Agent B");
+    await browser.keys(["Control", "2"]);
     await browser.waitUntil(async () => (await term.getText()).includes("agent-b-output"), {
       timeout: 15000,
       timeoutMsg: "expected agent B's scrollback after switching back to its tab",
