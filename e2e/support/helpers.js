@@ -50,6 +50,25 @@ export async function waitForTabStatusClass(name, cls, timeoutMs) {
   );
 }
 
+/**
+ * Read an element's text via the DOM instead of WebDriver's getText().
+ * WebKitGTK implements "Get Element Text" with its own atom
+ * (Source/WebKit/UIProcess/Automation/atoms/utils.js) whose overflow check
+ * is a self-described partial port of Selenium's: it treats *any*
+ * `overflow: hidden` element as overflowing its container, and then calls
+ * the subtree hidden when every child is "overflowed or otherwise hidden"
+ * -- which for a text-node child is unconditionally true. So any
+ * ellipsis-truncated element whose children are just text (.agent-name,
+ * .pane-branch, .pane-tab-name) reads back as "" through getText(), even
+ * while it's plainly visible and waitForDisplayed() (which uses the
+ * browser's own checkVisibility()) is happy with it.
+ */
+export async function textOf(el) {
+  // execute() only accepts an already-resolved element; awaiting a `$()`
+  // chain yields one (or throws a useful "not found" if it isn't there).
+  return browser.execute((e) => e.textContent ?? "", await el);
+}
+
 export const selectByLabel = (label) =>
   $(`//span[@class="field-label" and text()="${label}"]/following-sibling::select`);
 
@@ -67,25 +86,29 @@ export async function resetLayout() {
   await $('button[title="1-pane layout"]').click();
 }
 
-async function deleteAgentRow(row) {
+async function deleteAgentRow(row, rowCountBefore) {
   await row.waitForDisplayed();
   await row.$(".row-edit").click();
   const del = $(".danger-btn");
   await del.waitForDisplayed();
   await del.click();
-  await row.waitForExist({ reverse: true, timeout: 30000 });
+  // Not `row.waitForExist({ reverse: true })`: on an element that came from
+  // `$$`, WebdriverIO's isExisting() re-runs the *selector* against the
+  // parent and answers "does anything match", so it would only turn false
+  // once every .agent-row is gone -- i.e. it hangs whenever there are two
+  // or more agents to delete. Watch the row count instead.
+  await browser.waitUntil(async () => (await $$(".agent-row")).length < rowCountBefore, {
+    timeout: 30000,
+    timeoutMsg: `expected the sidebar to drop below ${rowCountBefore} agent rows after delete`,
+  });
 }
 
-/**
- * Delete every agent currently in the sidebar, killing any pty they own.
- * Operates on the row handle directly rather than round-tripping through
- * its name, since re-querying by name races the row's own text rendering.
- */
+/** Delete every agent currently in the sidebar, killing any pty they own. */
 export async function clearAllAgents() {
   for (let i = 0; i < 50; i++) {
     const rows = await $$(".agent-row");
     if (!rows.length) return;
-    await deleteAgentRow(rows[0]);
+    await deleteAgentRow(rows[0], rows.length);
   }
   throw new Error("clearAllAgents: still finding agents after 50 deletions");
 }

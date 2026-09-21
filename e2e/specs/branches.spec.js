@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createAgentViaTopbar, resetToBlank } from "../support/helpers.js";
+import { createAgentViaTopbar, resetToBlank, textOf } from "../support/helpers.js";
 
 function git(cwd, args) {
   execSync(`git ${args}`, { cwd, stdio: "pipe" });
@@ -46,7 +46,9 @@ describe("Git branches", () => {
   it("shows the current branch in the pane header and switches via its menu", async () => {
     const branchBtn = $(".pane-branch");
     await branchBtn.waitForDisplayed({ timeout: 10000 });
-    await browser.waitUntil(async () => (await branchBtn.getText()).includes("main"), {
+    // textOf, not getText(): see the note on it in helpers.js -- the chip's
+    // ellipsis styling makes WebKitGTK's getText() atom return "" for it.
+    await browser.waitUntil(async () => (await textOf(branchBtn)).includes("main"), {
       timeout: 20000,
       timeoutMsg: 'expected the pane branch chip to show "main"',
     });
@@ -55,7 +57,7 @@ describe("Git branches", () => {
     await $(".popmenu-item*=feature-one").waitForDisplayed();
     await $(".popmenu-item*=feature-one").click();
 
-    await browser.waitUntil(async () => (await branchBtn.getText()).includes("feature-one"), {
+    await browser.waitUntil(async () => (await textOf(branchBtn)).includes("feature-one"), {
       timeout: 20000,
       timeoutMsg: 'expected the pane branch chip to switch to "feature-one"',
     });
