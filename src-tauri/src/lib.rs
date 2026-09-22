@@ -2,7 +2,8 @@ mod pty;
 
 use std::fs;
 
-use tauri::{AppHandle, Manager};
+use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::{AppHandle, Emitter, Manager};
 
 use pty::AgentStore;
 
@@ -370,6 +371,84 @@ fn git_create_pr_url(path: String, branch: String) -> Option<String> {
     pr_url(&host, &repo_path, &branch)
 }
 
+/// Tauri's default menu, but with "Close Window" (Cmd/Ctrl+W) replaced by a
+/// "Close Tab" item — see the comment in `run`'s `setup` for why.
+fn build_menu(app_handle: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let pkg_info = app_handle.package_info();
+    let about_metadata = AboutMetadata {
+        name: Some(pkg_info.name.clone()),
+        version: Some(pkg_info.version.to_string()),
+        ..Default::default()
+    };
+
+    let close_tab = MenuItem::with_id(
+        app_handle,
+        "close_tab",
+        "Close Tab",
+        true,
+        Some("CmdOrCtrl+W"),
+    )?;
+
+    let window_menu = Submenu::with_items(
+        app_handle,
+        "Window",
+        true,
+        &[
+            &PredefinedMenuItem::minimize(app_handle, None)?,
+            &PredefinedMenuItem::maximize(app_handle, None)?,
+            #[cfg(target_os = "macos")]
+            &PredefinedMenuItem::separator(app_handle)?,
+            &close_tab,
+        ],
+    )?;
+
+    Menu::with_items(
+        app_handle,
+        &[
+            #[cfg(target_os = "macos")]
+            &Submenu::with_items(
+                app_handle,
+                pkg_info.name.clone(),
+                true,
+                &[
+                    &PredefinedMenuItem::about(app_handle, None, Some(about_metadata))?,
+                    &PredefinedMenuItem::separator(app_handle)?,
+                    &PredefinedMenuItem::services(app_handle, None)?,
+                    &PredefinedMenuItem::separator(app_handle)?,
+                    &PredefinedMenuItem::hide(app_handle, None)?,
+                    &PredefinedMenuItem::hide_others(app_handle, None)?,
+                    &PredefinedMenuItem::separator(app_handle)?,
+                    &PredefinedMenuItem::quit(app_handle, None)?,
+                ],
+            )?,
+            #[cfg(not(target_os = "macos"))]
+            &Submenu::with_items(app_handle, "File", true, &[&PredefinedMenuItem::quit(app_handle, None)?])?,
+            &Submenu::with_items(
+                app_handle,
+                "Edit",
+                true,
+                &[
+                    &PredefinedMenuItem::undo(app_handle, None)?,
+                    &PredefinedMenuItem::redo(app_handle, None)?,
+                    &PredefinedMenuItem::separator(app_handle)?,
+                    &PredefinedMenuItem::cut(app_handle, None)?,
+                    &PredefinedMenuItem::copy(app_handle, None)?,
+                    &PredefinedMenuItem::paste(app_handle, None)?,
+                    &PredefinedMenuItem::select_all(app_handle, None)?,
+                ],
+            )?,
+            #[cfg(target_os = "macos")]
+            &Submenu::with_items(
+                app_handle,
+                "View",
+                true,
+                &[&PredefinedMenuItem::fullscreen(app_handle, None)?],
+            )?,
+            &window_menu,
+        ],
+    )
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -388,6 +467,22 @@ pub fn run() {
                 let _ = win.show();
                 let _ = win.set_focus();
             }
+
+            // The app has one window but many terminal tabs per pane, so
+            // Cmd/Ctrl+W closing the whole window (the OS-default menu
+            // binding) would be surprising — swap it for a "Close Tab" item
+            // that the frontend handles by closing the focused pane's active
+            // tab instead.
+            let handle = app.handle();
+            app.set_menu(build_menu(handle)?)?;
+            app.on_menu_event(|app, event| {
+                if event.id() == "close_tab" {
+                    if let Some(win) = app.get_webview_window("main") {
+                        let _ = win.emit("close-active-tab", ());
+                    }
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

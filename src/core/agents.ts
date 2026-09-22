@@ -1,5 +1,5 @@
 import { type AgentDef, type Config, type Pane, type PaneRef, uid } from "./types";
-import { config, mgr, mutate, saveConfig, setFocusedPane, shellPath } from "./store";
+import { config, focusedPane, mgr, mutate, saveConfig, setFocusedPane, shellPath } from "./store";
 import { baseName, locateAgent, paneCwd, targetPaneRef } from "./layout";
 
 /* ---------- agent CRUD ---------- */
@@ -78,6 +78,15 @@ export function closeTab(ref: PaneRef, id: string) {
   });
   if (disposed) mgr.remove(id);
   saveConfig();
+}
+
+/** Close the active tab of the focused pane (Cmd/Ctrl+W). */
+export function closeFocusedTab() {
+  const fp = focusedPane();
+  const pane = fp && config.columns[fp.ci]?.panes[fp.pi];
+  const id = pane?.activeId;
+  if (!fp || !id) return;
+  closeTab(fp, id);
 }
 
 export function newShellInPane(ref: PaneRef) {

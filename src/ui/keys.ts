@@ -1,8 +1,16 @@
+import { listen } from "@tauri-apps/api/event";
+import { closeFocusedTab } from "../core/agents";
 import { bumpFontSize, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
 import { isPaletteOpen, toggleCommandPalette } from "./overlays";
 
 export function installKeys() {
+  // The packaged app's "Close Tab" menu item (which stands in for the
+  // OS-default "Close Window" on Cmd/Ctrl+W — see src-tauri/src/lib.rs)
+  // fires this instead of a DOM keydown, since a native menu accelerator
+  // intercepts the key before it reaches the webview.
+  void listen("close-active-tab", () => closeFocusedTab());
+
   // Capture phase: the focused xterm terminal calls stopPropagation on keys it
   // handles, so a bubble-phase listener never sees Cmd+Enter (and the other
   // chords) while the cursor is in a terminal. Capturing on window runs before
@@ -37,6 +45,14 @@ export function installKeys() {
       if (e.key === "Enter") {
         claim();
         toggleZoom();
+        return;
+      }
+      // Cmd/Ctrl + W  — close the focused pane's active tab (fallback for
+      // when the native menu accelerator doesn't intercept it first, e.g.
+      // the dev-server browser tab).
+      if (e.key === "w" || e.key === "W") {
+        claim();
+        closeFocusedTab();
         return;
       }
       // Cmd/Ctrl + ] / [  — switch terminal within the focused pane
