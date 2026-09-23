@@ -466,6 +466,19 @@ pub fn run() {
                 let _ = win.unminimize();
                 let _ = win.show();
                 let _ = win.set_focus();
+
+                // Toggling native fullscreen on macOS moves the webview into
+                // a new host window; WKWebView doesn't reliably re-fire a DOM
+                // focus event afterwards, leaving the terminal unable to
+                // receive keystrokes until the user clicks it. Tell the
+                // frontend explicitly whenever the window regains key focus
+                // so it can restore focus to the active terminal itself.
+                let focus_win = win.clone();
+                win.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Focused(true) = event {
+                        let _ = focus_win.emit("window-focused", ());
+                    }
+                });
             }
 
             // The app has one window but many terminal tabs per pane, so

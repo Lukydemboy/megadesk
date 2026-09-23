@@ -347,10 +347,30 @@ export class SessionManager {
     const [state, setState] = createStore<Record<string, SessionState>>({});
     this.state = state;
     this.setState = setState;
-    window.addEventListener("focus", () => {
-      if (this.activeAgentId)
-        this.sessions.get(this.activeAgentId)?.clearAttention(this);
-    });
+    // macOS drops webview keyboard focus when the window enters/exits native
+    // fullscreen, so the terminal stops receiving input until the user
+    // clicks it. Restore focus to the active terminal whenever the window
+    // regains focus, unless the user is already typing somewhere else (e.g.
+    // a dialog field). We listen on both the DOM focus event (normal
+    // app-switch focus) and the native "window-focused" event the Rust side
+    // emits from WindowEvent::Focused, since WKWebView doesn't reliably fire
+    // the DOM event around a native fullscreen transition.
+    const onWindowFocused = () => {
+      if (!this.activeAgentId) return;
+      const s = this.sessions.get(this.activeAgentId);
+      s?.clearAttention(this);
+      const active = document.activeElement;
+      const typingElsewhere =
+        active instanceof HTMLElement &&
+        active !== document.body &&
+        active !== s?.term.textarea &&
+        (active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.isContentEditable);
+      if (!typingElsewhere) s?.term.focus();
+    };
+    window.addEventListener("focus", onWindowFocused);
+    void listen("window-focused", onWindowFocused);
 
     void listen<{ id: string; b64: string }>("agent:output", (e) => {
       const s = this.sessions.get(e.payload.id);
