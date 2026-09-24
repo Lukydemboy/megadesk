@@ -39,8 +39,9 @@ struct ExitEvent {
 #[derive(Debug, Deserialize)]
 pub struct SpawnOpts {
     pub id: String,
-    /// Program to run, e.g. "claude". Resolved through a login shell so it
-    /// picks up the user's real PATH (GUI apps on macOS don't inherit it).
+    /// Program to run, e.g. "claude". Resolved through a login shell on
+    /// macOS/Linux so it picks up the user's real PATH (GUI apps on macOS
+    /// don't inherit it); looked up on PATH directly on Windows.
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
@@ -48,11 +49,6 @@ pub struct SpawnOpts {
     pub cwd: Option<String>,
     pub cols: u16,
     pub rows: u16,
-}
-
-fn shell_quote(s: &str) -> String {
-    // Single-quote for POSIX shells, escaping embedded single quotes.
-    format!("'{}'", s.replace('\'', "'\\''"))
 }
 
 #[tauri::command]
@@ -78,18 +74,9 @@ pub fn spawn_agent(
         })
         .map_err(|e| e.to_string())?;
 
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-    let mut line = shell_quote(&opts.command);
-    for a in &opts.args {
-        line.push(' ');
-        line.push_str(&shell_quote(a));
-    }
-    let invocation = format!("exec {line}");
-
-    let mut cmd = CommandBuilder::new(&shell);
-    cmd.arg("-l");
-    cmd.arg("-c");
-    cmd.arg(&invocation);
+    let (program, args) = crate::platform::user_command(&opts.command, &opts.args);
+    let mut cmd = CommandBuilder::new(&program);
+    cmd.args(&args);
     if let Some(cwd) = opts.cwd.as_ref().filter(|c| !c.is_empty()) {
         cmd.cwd(cwd);
     }

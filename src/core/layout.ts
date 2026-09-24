@@ -95,8 +95,8 @@ export function paneCwd(pane: Pane | undefined): string {
 }
 
 export function baseName(p: string): string {
-  const t = p.replace(/\/+$/, "");
-  return t.slice(t.lastIndexOf("/") + 1) || t || "~";
+  const t = p.replace(/[\\/]+$/, "");
+  return t.slice(Math.max(t.lastIndexOf("/"), t.lastIndexOf("\\")) + 1) || t || "~";
 }
 
 /* ---------- zoom & tab navigation ---------- */

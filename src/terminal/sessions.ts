@@ -55,8 +55,15 @@ export const TERM_THEMES: Record<TerminalTheme, ITheme> = {
 const themeFor = (settings?: Settings): ITheme =>
   TERM_THEMES[settings?.terminalTheme ?? DEFAULT_TERM_THEME] ?? DARK_THEME;
 
-/** Backslash-escape a path the way a terminal does when you drag a file in. */
+const IS_WINDOWS = navigator.userAgent.includes("Windows");
+
+/**
+ * Escape a path the way a terminal does when you drag a file in: backslash
+ * escapes on POSIX; on Windows backslash is the path separator, so
+ * double-quote it instead.
+ */
 function escapePath(p: string): string {
+  if (IS_WINDOWS) return /[\s&()^;,=!%']/.test(p) ? `"${p}"` : p;
   return p.replace(/[\s"'`\\$&!|;<>()*?\[\]{}#]/g, (c) => "\\" + c);
 }
 

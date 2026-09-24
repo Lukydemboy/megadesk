@@ -1,3 +1,4 @@
+mod platform;
 mod pty;
 
 use std::fs;
@@ -43,7 +44,7 @@ fn home_dir(app: AppHandle) -> Result<String, String> {
 /// plain interactive terminal without hard-coding one.
 #[tauri::command]
 fn login_shell() -> String {
-    std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+    platform::login_shell()
 }
 
 /// Persist a file dropped onto a terminal into a cache dir and hand back its
@@ -89,42 +90,34 @@ fn save_dropped_file(app: AppHandle, name: String, data: Vec<u8>) -> Result<Stri
     Ok(path.to_string_lossy().to_string())
 }
 
-/// Open a directory in Zed. Run through a login shell so `zed` resolves on
-/// the user's real PATH (GUI apps on macOS don't inherit it).
+/// Open a directory in Zed. Run through a login shell on macOS/Linux so
+/// `zed` resolves on the user's real PATH (GUI apps on macOS don't inherit it).
 #[tauri::command]
 fn open_in_zed(path: String) -> Result<(), String> {
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-    let quoted = format!("'{}'", path.replace('\'', "'\\''"));
-    std::process::Command::new(&shell)
-        .args(["-l", "-c", &format!("exec zed {quoted}")])
+    let (program, args) = platform::user_command("zed", &[path]);
+    platform::command(&program)
+        .args(&args)
         .spawn()
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
 
 /// Open a URL (an http/https link an agent printed in its terminal) in the
-/// user's default browser. Run through a login shell so `open` resolves and
-/// behaves like it would from the user's own shell.
+/// user's default browser.
 #[tauri::command]
 fn open_url(url: String) -> Result<(), String> {
     // Only hand off well-formed web URLs — never arbitrary shell fragments.
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return Err("only http/https URLs are allowed".into());
     }
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-    let quoted = format!("'{}'", url.replace('\'', "'\\''"));
-    std::process::Command::new(&shell)
-        .args(["-l", "-c", &format!("exec open {quoted}")])
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    platform::open_url(&url).map_err(|e| e.to_string())
 }
 
 /// Current branch of the git repo at `path`, or `None` if it's not inside
 /// one (or has no commits/branch yet).
 #[tauri::command]
 fn git_branch(path: String) -> Option<String> {
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args(["branch", "--show-current"])
         .current_dir(path)
         .output()
@@ -145,7 +138,7 @@ fn git_branch(path: String) -> Option<String> {
 #[tauri::command]
 fn git_recent_branches(path: String) -> Vec<String> {
     let current = git_branch(path.clone()).unwrap_or_default();
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args([
             "for-each-ref",
             "--sort=-committerdate",
@@ -169,7 +162,7 @@ fn git_recent_branches(path: String) -> Vec<String> {
 /// Check out an existing local branch in the git repo at `path`.
 #[tauri::command]
 fn git_switch_branch(path: String, branch: String) -> Result<(), String> {
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args(["checkout", &branch])
         .current_dir(path)
         .output()
@@ -187,7 +180,7 @@ fn git_switch_branch(path: String, branch: String) -> Result<(), String> {
 /// confirmed in the UI.)
 #[tauri::command]
 fn git_delete_branch(path: String, branch: String) -> Result<(), String> {
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args(["branch", "-D", &branch])
         .current_dir(path)
         .output()
@@ -205,7 +198,7 @@ fn git_delete_branch(path: String, branch: String) -> Result<(), String> {
 /// `master` for repos without a remote tracking ref.
 #[tauri::command]
 fn git_default_branch(path: String) -> Option<String> {
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args(["symbolic-ref", "refs/remotes/origin/HEAD"])
         .current_dir(&path)
         .output()
@@ -219,7 +212,7 @@ fn git_default_branch(path: String) -> Option<String> {
         }
     }
     for candidate in ["main", "master"] {
-        let exists = std::process::Command::new("git")
+        let exists = platform::command("git")
             .args([
                 "show-ref",
                 "--verify",
@@ -257,7 +250,7 @@ fn git_all_branches(path: String) -> Vec<BranchInfo> {
     let format = format!(
         "%(refname:short){SEP}%(HEAD){SEP}%(committerdate:unix){SEP}%(objectname:short){SEP}%(subject)"
     );
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args([
             "for-each-ref",
             "--sort=-committerdate",
@@ -349,7 +342,7 @@ fn parse_remote(remote: &str) -> Option<(String, String)> {
 /// The `(host, owner/repo)` of the git repo's `origin` remote at `path`, or
 /// `None` if there's no remote or it doesn't parse as one we recognise.
 fn resolve_remote(path: &str) -> Option<(String, String)> {
-    let out = std::process::Command::new("git")
+    let out = platform::command("git")
         .args(["remote", "get-url", "origin"])
         .current_dir(path)
         .output()
@@ -461,6 +454,11 @@ fn build_menu(app_handle: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             )?,
             #[cfg(not(target_os = "macos"))]
             &Submenu::with_items(app_handle, "File", true, &[&PredefinedMenuItem::quit(app_handle, None)?])?,
+            // macOS needs these for clipboard shortcuts to reach the
+            // webview at all. Elsewhere the webview handles them natively,
+            // and the menu's Ctrl+C/V/A/Z accelerators would swallow those
+            // keys before the terminal sees them (no Ctrl+C to interrupt).
+            #[cfg(target_os = "macos")]
             &Submenu::with_items(
                 app_handle,
                 "Edit",
