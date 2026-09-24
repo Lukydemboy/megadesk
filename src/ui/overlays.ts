@@ -1,8 +1,6 @@
 import { createSignal } from "solid-js";
 import type { AgentDef, PaneRef } from "../core/types";
 
-/* ---------- which overlay is open ---------- */
-
 export interface AgentDialogState {
   existing?: AgentDef;
   targetPane?: PaneRef;
@@ -15,6 +13,13 @@ export const [agentPicker, setAgentPicker] = createSignal<PaneRef | null>(null);
 export const [settingsOpen, setSettingsOpen] = createSignal(false);
 export const [paletteOpen, setPaletteOpen] = createSignal(false);
 export const [branchesDialog, setBranchesDialog] = createSignal<string | null>(null);
+
+export interface ResetToMainState {
+  cwd: string;
+  branch: string;
+}
+export const [resetToMainDialog, setResetToMainDialog] =
+  createSignal<ResetToMainState | null>(null);
 
 export function openAgentDialog(existing?: AgentDef, targetPane?: PaneRef) {
   setAgentDialog({ existing, targetPane });
@@ -42,4 +47,10 @@ export function openBranchesDialog(cwd: string) {
 }
 export function closeBranchesDialog() {
   setBranchesDialog(null);
+}
+export function openResetToMainDialog(cwd: string, branch: string) {
+  setResetToMainDialog({ cwd, branch });
+}
+export function closeResetToMainDialog() {
+  setResetToMainDialog(null);
 }

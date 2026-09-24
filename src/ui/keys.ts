@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { closeFocusedTab } from "../core/agents";
-import { bumpFontSize, zoomedPane } from "../core/store";
+import { bumpFontSize, toggleSidebar, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
 import { isPaletteOpen, toggleCommandPalette } from "./overlays";
 
@@ -41,6 +41,12 @@ export function installKeys() {
       }
       // The palette owns the keyboard while it's open.
       if (isPaletteOpen()) return;
+      // Cmd/Ctrl + B  — show/hide the agent sidebar
+      if (e.key === "b" || e.key === "B") {
+        claim();
+        toggleSidebar();
+        return;
+      }
       // Cmd/Ctrl + Enter  — zoom the focused pane to fill the grid, or restore
       if (e.key === "Enter") {
         claim();

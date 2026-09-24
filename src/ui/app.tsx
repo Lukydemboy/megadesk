@@ -1,9 +1,10 @@
-import { createEffect, on, onMount } from "solid-js";
+import { createEffect, on, onMount, Show } from "solid-js";
 import {
   config,
   mgr,
   mutate,
   setZoomedPane,
+  sidebarVisible,
   zoomedPane,
 } from "../core/store";
 import { Topbar } from "./Topbar";
@@ -14,6 +15,7 @@ import { AgentPicker } from "./AgentPicker";
 import { SettingsDialog } from "./SettingsDialog";
 import { CommandPalette } from "./CommandPalette";
 import { BranchesDialog } from "./BranchesDialog";
+import { ResetToMainDialog } from "./ResetToMainDialog";
 import { Toasts } from "./Toasts";
 
 let resizeRaf = 0;
@@ -93,11 +95,16 @@ export function App() {
 
   onMount(() => window.addEventListener("resize", resizeVisible));
 
+  // The grid's available width changes when the sidebar is hidden/shown.
+  createEffect(on(sidebarVisible, () => resizeVisible(), { defer: true }));
+
   return (
     <>
       <Topbar />
       <div class="main">
-        <Sidebar />
+        <Show when={sidebarVisible()}>
+          <Sidebar />
+        </Show>
         <Grid />
       </div>
       <AgentDialog />
@@ -105,6 +112,7 @@ export function App() {
       <SettingsDialog />
       <CommandPalette />
       <BranchesDialog />
+      <ResetToMainDialog />
       <Toasts />
     </>
   );

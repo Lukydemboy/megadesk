@@ -10,8 +10,6 @@ import {
 } from "./types";
 import type { SessionManager } from "../terminal/sessions";
 
-/* ---------- reactive config ---------- */
-
 const [config, setConfig] = createStore<Config>(defaultConfig());
 export { config, setConfig };
 
@@ -27,10 +25,12 @@ export let mgr: SessionManager = null as unknown as SessionManager;
 export let homeDir = "";
 export let shellPath = "";
 
-/** Pane whose terminal was last focused — target for sidebar clicks and tab keys. */
 export const [focusedPane, setFocusedPane] = createSignal<PaneRef | null>(null);
-/** Pane blown up to fill the grid, or null when the normal split is shown. */
 export const [zoomedPane, setZoomedPane] = createSignal<PaneRef | null>(null);
+export const [sidebarVisible, setSidebarVisible] = createSignal(true);
+export function toggleSidebar() {
+  setSidebarVisible((v) => !v);
+}
 
 export function setMgr(m: SessionManager) {
   mgr = m;
