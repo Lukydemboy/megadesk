@@ -15,6 +15,7 @@ import { AgentPicker } from "./AgentPicker";
 import { SettingsDialog } from "./SettingsDialog";
 import { CommandPalette } from "./CommandPalette";
 import { BranchesDialog } from "./BranchesDialog";
+import { ResetToMainDialog } from "./ResetToMainDialog";
 import { Toasts } from "./Toasts";
 
 let resizeRaf = 0;
@@ -111,6 +112,7 @@ export function App() {
       <SettingsDialog />
       <CommandPalette />
       <BranchesDialog />
+      <ResetToMainDialog />
       <Toasts />
     </>
   );

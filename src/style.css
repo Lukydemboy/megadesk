@@ -732,6 +732,7 @@ select.field-input {
   font-weight: 560;
 }
 .primary-btn,
+.secondary-btn,
 .danger-btn {
   height: 32px;
   padding: 0 16px;
@@ -744,6 +745,7 @@ select.field-input {
   transition: transform 80ms ease, background 80ms ease;
 }
 .primary-btn:active,
+.secondary-btn:active,
 .danger-btn:active {
   transform: scale(0.97);
 }
@@ -752,10 +754,25 @@ select.field-input {
   color: var(--panel-2);
   border-color: var(--accent);
 }
+.secondary-btn {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.secondary-btn:hover {
+  background: var(--accent-soft);
+}
 .danger-btn {
   background: var(--danger);
   color: var(--panel-2);
   border-color: var(--danger);
+}
+.danger-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Pushes a footer button (e.g. AgentDialog's Delete) to the opposite side
+   from flex-end's natural right alignment. */
+.dialog-footer-left {
   margin-right: auto;
 }
 .popmenu-sep-line {

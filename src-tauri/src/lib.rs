@@ -199,6 +199,44 @@ fn git_delete_branch(path: String, branch: String) -> Result<(), String> {
     }
 }
 
+/// The repo's default branch ("main", "master", ...) — what "Reset to
+/// main" switches back to. Prefers the remote's default (`origin/HEAD`,
+/// authoritative when it's set up) and falls back to a local `main` or
+/// `master` for repos without a remote tracking ref.
+#[tauri::command]
+fn git_default_branch(path: String) -> Option<String> {
+    let out = std::process::Command::new("git")
+        .args(["symbolic-ref", "refs/remotes/origin/HEAD"])
+        .current_dir(&path)
+        .output()
+        .ok();
+    if let Some(out) = out {
+        if out.status.success() {
+            let refname = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if let Some(name) = refname.strip_prefix("refs/remotes/origin/") {
+                return Some(name.to_string());
+            }
+        }
+    }
+    for candidate in ["main", "master"] {
+        let exists = std::process::Command::new("git")
+            .args([
+                "show-ref",
+                "--verify",
+                "--quiet",
+                &format!("refs/heads/{candidate}"),
+            ])
+            .current_dir(&path)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        if exists {
+            return Some(candidate.to_string());
+        }
+    }
+    None
+}
+
 #[derive(serde::Serialize)]
 struct BranchInfo {
     name: String,
@@ -510,6 +548,7 @@ pub fn run() {
             git_switch_branch,
             git_delete_branch,
             git_all_branches,
+            git_default_branch,
             git_branch_source_url,
             git_create_pr_url,
             save_dropped_file,

@@ -61,7 +61,7 @@ function AgentDialogForm(props: { state: AgentDialogState }) {
         <>
           <Show when={editing}>
             <button
-              class="danger-btn"
+              class="danger-btn dialog-footer-left"
               onClick={() => {
                 deleteAgent(def.id);
                 closeAgentDialog();

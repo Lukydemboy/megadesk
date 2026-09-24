@@ -19,7 +19,7 @@ import {
 } from "../core/store";
 import { paneCwd, toggleZoom } from "../core/layout";
 import { closeTab, upsertAgent } from "../core/agents";
-import { openAgentPicker, openBranchesDialog } from "./overlays";
+import { openAgentPicker, openBranchesDialog, openResetToMainDialog } from "./overlays";
 import { showToast } from "./Toasts";
 import { Icon } from "./icons";
 import {
@@ -161,6 +161,17 @@ function PaneBranch(props: { pane: Pane }) {
               </Show>
             </Show>
             <div class="popmenu-sep-line" />
+            <button
+              class="popmenu-item"
+              onClick={() => {
+                const name = branch();
+                close();
+                if (name) openResetToMainDialog(cwd(), name);
+              }}
+            >
+              <Icon name="restart" />
+              Reset to main…
+            </button>
             <button
               class="popmenu-item"
               onClick={() => {
