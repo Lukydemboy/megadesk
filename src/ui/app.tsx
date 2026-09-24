@@ -1,9 +1,10 @@
-import { createEffect, on, onMount } from "solid-js";
+import { createEffect, on, onMount, Show } from "solid-js";
 import {
   config,
   mgr,
   mutate,
   setZoomedPane,
+  sidebarVisible,
   zoomedPane,
 } from "../core/store";
 import { Topbar } from "./Topbar";
@@ -93,11 +94,16 @@ export function App() {
 
   onMount(() => window.addEventListener("resize", resizeVisible));
 
+  // The grid's available width changes when the sidebar is hidden/shown.
+  createEffect(on(sidebarVisible, () => resizeVisible(), { defer: true }));
+
   return (
     <>
       <Topbar />
       <div class="main">
-        <Sidebar />
+        <Show when={sidebarVisible()}>
+          <Sidebar />
+        </Show>
         <Grid />
       </div>
       <AgentDialog />

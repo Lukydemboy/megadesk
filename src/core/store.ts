@@ -31,6 +31,11 @@ export let shellPath = "";
 export const [focusedPane, setFocusedPane] = createSignal<PaneRef | null>(null);
 /** Pane blown up to fill the grid, or null when the normal split is shown. */
 export const [zoomedPane, setZoomedPane] = createSignal<PaneRef | null>(null);
+/** Whether the agent sidebar is shown. */
+export const [sidebarVisible, setSidebarVisible] = createSignal(true);
+export function toggleSidebar() {
+  setSidebarVisible((v) => !v);
+}
 
 export function setMgr(m: SessionManager) {
   mgr = m;
