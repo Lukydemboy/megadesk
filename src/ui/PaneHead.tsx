@@ -18,7 +18,7 @@ import {
   zoomedPane,
 } from "../core/store";
 import { paneCwd, toggleZoom } from "../core/layout";
-import { closeTab, upsertAgent } from "../core/agents";
+import { closeTab, newShellInPane, upsertAgent } from "../core/agents";
 import { openAgentPicker, openBranchesDialog, openResetToMainDialog } from "./overlays";
 import { showToast } from "./Toasts";
 import { Icon } from "./icons";
@@ -37,7 +37,16 @@ export function PaneHead(props: { ci: number; pi: number; pane: Pane }) {
       : undefined;
 
   return (
-    <div class="pane-head">
+    <div
+      class="pane-head"
+      onDblClick={(e) => {
+        // Only the empty bar space counts; tabs, buttons and the branch chip handle their own clicks.
+        const t = e.target as HTMLElement;
+        if (t !== e.currentTarget && !t.classList.contains("pane-tabs")) return;
+        setFocusedPane({ ci: props.ci, pi: props.pi });
+        newShellInPane({ ci: props.ci, pi: props.pi });
+      }}
+    >
       <div class="pane-tabs">
         <For each={props.pane.agentIds}>
           {(id) => (

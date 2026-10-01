@@ -1,5 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
-import { closeFocusedTab } from "../core/agents";
+import { closeFocusedTab, newShellInFocusedPane } from "../core/agents";
 import { bumpFontSize, toggleSidebar, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
 import { isPaletteOpen, toggleCommandPalette } from "./overlays";
@@ -59,6 +59,12 @@ export function installKeys() {
       if (e.key === "w" || e.key === "W") {
         claim();
         closeFocusedTab();
+        return;
+      }
+      // Cmd/Ctrl + T  — open a new shell in the focused pane
+      if (e.key === "t" || e.key === "T") {
+        claim();
+        newShellInFocusedPane();
         return;
       }
       // Cmd/Ctrl + ] / [  — switch terminal within the focused pane
