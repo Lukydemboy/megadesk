@@ -74,8 +74,16 @@ export async function loadConfig() {
       ),
     ) as Partial<Settings>;
     next.settings = { ...d.settings, ...kept };
+    // Shells are short-lived: never restore one from a previous run.
+    const shellIds = new Set(
+      (next.agents ?? []).filter((a) => a.kind === "shell").map((a) => a.id),
+    );
+    next.agents = (next.agents ?? []).filter((a) => a.kind !== "shell");
     if (!next.columns?.length) next.columns = defaultConfig().columns;
-    for (const col of next.columns) col.panes = col.panes.map(migratePane);
+    for (const col of next.columns) {
+      col.panes = col.panes.map(migratePane);
+      for (const p of col.panes) p.agentIds = p.agentIds.filter((id) => !shellIds.has(id));
+    }
 
     // An agent belongs to one pane only. Drop stray duplicates an older
     // build may have left in the saved layout, keeping the first home.

@@ -340,6 +340,8 @@ export class SessionManager {
   private setState: SetStoreFunction<Record<string, SessionState>>;
 
   onFocusAgent: (id: string) => void = () => {};
+  /** Called after a process exits, so shells can be dropped entirely. */
+  onExit: (def: AgentDef) => void = () => {};
   onToast: (message: string, kind?: "info" | "warn") => void = () => {};
 
   constructor(settings: Settings) {
@@ -390,6 +392,10 @@ export class SessionManager {
       );
       s.attention = true;
       this.sync(e.payload.id);
+      if (s.def.kind === "shell") {
+        this.onExit(s.def);
+        return;
+      }
       this.onToast(`${s.def.name} — process exited`, "warn");
     });
   }
