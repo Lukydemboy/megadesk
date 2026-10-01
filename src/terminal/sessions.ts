@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { WebLinksAddon } from "@xterm/addon-web-links";
+import { registerWrappingLinkProvider } from "./linkProvider";
 import type { AgentDef, Settings, TerminalTheme } from "../core/types";
 import {
   DEFAULT_TERM_FONT,
@@ -97,14 +97,12 @@ export class Session {
     });
     this.fit = new FitAddon();
     this.term.loadAddon(this.fit);
-    this.term.loadAddon(
-      new WebLinksAddon((event, uri) => {
-        event.preventDefault();
-        void invoke("open_url", { url: uri }).catch((e) =>
-          console.error("open_url failed", uri, e),
-        );
-      }),
-    );
+    registerWrappingLinkProvider(this.term, (event, uri) => {
+      event.preventDefault();
+      void invoke("open_url", { url: uri }).catch((e) =>
+        console.error("open_url failed", uri, e),
+      );
+    });
     this.host = document.createElement("div");
     this.host.className = "term-host";
     this.term.open(this.host);
