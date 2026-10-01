@@ -99,6 +99,12 @@ export function closeFocusedTab() {
   closeTab(fp, id);
 }
 
+/** Open a new shell tab in the focused pane (Cmd/Ctrl+T). */
+export function newShellInFocusedPane() {
+  const fp = focusedPane();
+  if (fp) newShellInPane(fp);
+}
+
 export function newShellInPane(ref: PaneRef) {
   const pane = config.columns[ref.ci]?.panes[ref.pi];
   if (!pane) return;
