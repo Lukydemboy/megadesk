@@ -50,6 +50,9 @@ export function moveTab(
     // The tab now lives in dst; drop any copies still sitting in other panes.
     evictAgentFromOtherPanes(c, from.id, dst);
 
+    // Show the tab that was just moved over, rather than leaving it hidden.
+    if (src !== dst) dst.activeId = from.id;
+
     // Repair any active-tab pointer left dangling by a cross-pane move.
     for (const p of new Set([src, dst])) {
       if (p.activeId && !p.agentIds.includes(p.activeId))
