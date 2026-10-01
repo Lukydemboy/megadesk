@@ -8,7 +8,7 @@ import {
   zoomedPane,
 } from "../core/store";
 import { addAgentTab } from "../core/agents";
-import { DND_TYPE } from "./dnd";
+import { DND_TYPE, currentTabDrag, endTabDrag, moveTab } from "./dnd";
 import { PaneHead } from "./PaneHead";
 import { PaneBody } from "./PaneBody";
 
@@ -96,15 +96,21 @@ function PaneView(props: {
   const [dropActive, setDropActive] = createSignal(false);
   const isOurDrag = (e: DragEvent) =>
     !!e.dataTransfer && Array.from(e.dataTransfer.types).includes(DND_TYPE);
+  /** A tab dragged from a *different* pane (same-pane drops are reorders on the tabs). */
+  const foreignTabDrag = () => {
+    const d = currentTabDrag();
+    return d && (d.ci !== props.ci || d.pi !== props.pi) ? d : null;
+  };
 
   return (
     <div
       classList={{ pane: true, "drop-target": dropActive() }}
       style={props.zoomed ? {} : { "flex-grow": String(props.pane.frac) }}
       onDragOver={(e) => {
-        if (!isOurDrag(e)) return;
+        if (!isOurDrag(e) && !foreignTabDrag()) return;
         e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        if (e.dataTransfer)
+          e.dataTransfer.dropEffect = isOurDrag(e) ? "copy" : "move";
         setDropActive(true);
       }}
       onDragLeave={(e) => {
@@ -112,9 +118,15 @@ function PaneView(props: {
           setDropActive(false);
       }}
       onDrop={(e) => {
-        if (!isOurDrag(e)) return;
+        const tab = foreignTabDrag();
+        if (!isOurDrag(e) && !tab) return;
         e.preventDefault();
         setDropActive(false);
+        if (tab) {
+          endTabDrag();
+          moveTab(tab, { ci: props.ci, pi: props.pi }, "", false);
+          return;
+        }
         const id = e.dataTransfer!.getData(DND_TYPE);
         setFocusedPane({ ci: props.ci, pi: props.pi });
         if (id) addAgentTab({ ci: props.ci, pi: props.pi }, id);
