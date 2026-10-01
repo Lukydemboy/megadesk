@@ -21,6 +21,8 @@ const URL_REGEX =
   /(https?|HTTPS?):[/]{2}[^\s"'!*(){}|\\^<>`]*[^\s"':,.!?{}|\\^~\[\]`()<>]/;
 
 const MAX_WINDOW_ROWS = 40;
+/** CLIs often wrap a few columns short of the real edge (padding/margins). */
+const EDGE_SLACK = 12;
 
 interface CellPos {
   /** 1-based buffer row. */
@@ -29,13 +31,44 @@ interface CellPos {
   x: number;
 }
 
-function rowReachesEdge(term: Terminal, rowIndex0: number, scratch: IBufferCell): boolean {
-  const line = term.buffer.active.getLine(rowIndex0);
-  if (!line) return false;
-  const last = line.getCell(term.cols - 1, scratch);
-  if (!last) return false;
-  const ch = last.getChars();
-  return ch !== "" && ch !== " ";
+interface RowInfo {
+  /** Cells as [char, col] with trailing blanks dropped. */
+  cells: Array<[string, number]>;
+  /** Index into `cells` of the first non-blank cell. */
+  first: number;
+  /** Last non-blank column, or -1 for an empty row. */
+  lastCol: number;
+  reachesEdge: boolean;
+  /** Last whitespace-delimited token of the row. */
+  lastToken: string;
+  /** True if the row holds a single token with no inner whitespace. */
+  singleToken: boolean;
+}
+
+function readRow(term: Terminal, row0: number, scratch: IBufferCell): RowInfo | undefined {
+  const line = term.buffer.active.getLine(row0);
+  if (!line) return undefined;
+  const cells: Array<[string, number]> = [];
+  for (let col = 0; col < term.cols; col++) {
+    const cell = line.getCell(col, scratch);
+    if (!cell || cell.getWidth() === 0) continue; // wide-char continuation cell
+    cells.push([cell.getChars() || " ", col]);
+  }
+  let end = cells.length;
+  while (end > 0 && cells[end - 1][0] === " ") end--;
+  cells.length = end;
+  let first = 0;
+  while (first < cells.length && cells[first][0] === " ") first++;
+  const text = cells.slice(first).map((c) => c[0]).join("");
+  const lastCol = end > 0 ? cells[end - 1][1] : -1;
+  return {
+    cells,
+    first,
+    lastCol,
+    reachesEdge: lastCol === term.cols - 1,
+    lastToken: text.split(/\s+/).pop() ?? "",
+    singleToken: text.length > 0 && !/\s/.test(text),
+  };
 }
 
 function collectWindow(
@@ -43,28 +76,41 @@ function collectWindow(
   startRow0: number,
 ): { text: string; positions: CellPos[] } {
   const buf = term.buffer.active;
-  const cols = term.cols;
   const scratch = buf.getNullCell();
+  const cache = new Map<number, RowInfo | undefined>();
+  const info = (r: number) => {
+    if (!cache.has(r)) cache.set(r, readRow(term, r, scratch));
+    return cache.get(r);
+  };
+
+  // Does row r continue onto row r+1? A row at the buffer edge always does
+  // (real or CLI-side wrap). A row that stops just short of the edge only
+  // does when it ends in a URL fragment, to avoid gluing unrelated prose.
+  const continues = (r: number, depth = 0): boolean => {
+    const row = info(r);
+    const next = info(r + 1);
+    if (!row || !next || next.lastCol < 0) return false;
+    if (row.reachesEdge) return true;
+    if (row.lastCol < term.cols - 1 - EDGE_SLACK) return false;
+    if (/https?:\/\//i.test(row.lastToken)) return true;
+    return row.singleToken && depth < MAX_WINDOW_ROWS && r > 0 && continues(r - 1, depth + 1);
+  };
 
   let top = startRow0;
   let bottom = startRow0;
-
-  while (top > 0 && startRow0 - top < MAX_WINDOW_ROWS && rowReachesEdge(term, top - 1, scratch)) {
-    top--;
-  }
-  while (bottom - top < MAX_WINDOW_ROWS && rowReachesEdge(term, bottom, scratch) && buf.getLine(bottom + 1)) {
-    bottom++;
-  }
+  while (top > 0 && startRow0 - top < MAX_WINDOW_ROWS && continues(top - 1)) top--;
+  while (bottom - top < MAX_WINDOW_ROWS && continues(bottom)) bottom++;
 
   let text = "";
   const positions: CellPos[] = [];
   for (let row = top; row <= bottom; row++) {
-    const line = buf.getLine(row);
-    if (!line) continue;
-    for (let col = 0; col < cols; col++) {
-      const cell = line.getCell(col, scratch);
-      if (!cell || cell.getWidth() === 0) continue; // wide-char continuation cell
-      const ch = cell.getChars() || " ";
+    const r = info(row);
+    if (!r) continue;
+    // Rows that follow a join drop their indentation; the first row keeps
+    // its leading blanks so link columns stay correct.
+    const from = row === top ? 0 : r.first;
+    for (let i = from; i < r.cells.length; i++) {
+      const [ch, col] = r.cells[i];
       for (let k = 0; k < ch.length; k++) positions.push({ y: row + 1, x: col });
       text += ch;
     }
