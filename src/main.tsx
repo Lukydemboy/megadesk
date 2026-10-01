@@ -18,6 +18,8 @@ import { App } from "./ui/app";
 import { installKeys } from "./ui/keys";
 import { showToast } from "./ui/Toasts";
 
+import { disposeShell } from "./core/agents";
+
 async function boot() {
   await loadConfig();
   applyTerminalTheme();
@@ -35,6 +37,7 @@ async function boot() {
 
   const m = new SessionManager(config.settings);
   m.onToast = showToast;
+  m.onExit = (def) => disposeShell(def.id);
   m.onFocusAgent = (id) => {
     config.columns.forEach((col, ci) =>
       col.panes.forEach((p, pi) => {

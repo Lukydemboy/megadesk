@@ -52,11 +52,11 @@ function AgentPickerBody(props: { target: PaneRef }) {
       }
     >
       <Show
-        when={config.agents.length}
+        when={config.agents.some((a) => a.kind !== "shell")}
         fallback={<div class="dialog-note">No agents yet — create one below.</div>}
       >
         <div class="palette-list">
-          <For each={config.agents}>
+          <For each={config.agents.filter((a) => a.kind !== "shell")}>
             {(def) => {
               const st = () => mgr.state[def.id];
               return (

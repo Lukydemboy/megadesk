@@ -80,6 +80,16 @@ export function closeTab(ref: PaneRef, id: string) {
   saveConfig();
 }
 
+/** Delete a shell entirely: its tab, its session and its config entry. */
+export function disposeShell(id: string) {
+  mutate((c) => {
+    c.agents = c.agents.filter((a) => a.id !== id);
+    for (const col of c.columns) for (const p of col.panes) removeTabFromPane(p, id);
+  });
+  mgr.remove(id);
+  saveConfig();
+}
+
 /** Close the active tab of the focused pane (Cmd/Ctrl+W). */
 export function closeFocusedTab() {
   const fp = focusedPane();
