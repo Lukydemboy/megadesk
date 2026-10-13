@@ -562,6 +562,8 @@ pub fn run() {
             chat::spawn_chat,
             chat::send_chat,
             chat::interrupt_chat,
+            chat::control_chat,
+            chat::chat_models,
             chat::kill_chat,
             chat::chat_running,
             chat::chat_log,

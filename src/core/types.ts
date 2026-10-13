@@ -20,6 +20,10 @@ export interface AgentDef {
   permissionMode?: ChatPermissionMode;
   /** Chat mode: the Claude Code session to resume on the next launch. */
   sessionId?: string;
+  /** Chat mode: `--model` alias; unset means DEFAULT_CHAT_MODEL. */
+  model?: string;
+  /** Chat mode: `--effort`; unset means DEFAULT_CHAT_EFFORT. */
+  effort?: ChatEffort;
 }
 
 export type AgentMode = "terminal" | "chat";
@@ -29,6 +33,29 @@ export type ChatPermissionMode =
   | "acceptEdits"
   | "plan"
   | "bypassPermissions";
+
+export type ChatEffort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/** Models offered in the chat composer, as Claude Code `--model` aliases. */
+export const CHAT_MODELS: { value: string; label: string }[] = [
+  { value: "fable", label: "Fable" },
+  { value: "opus", label: "Opus" },
+  { value: "opus[1m]", label: "Opus (1M context)" },
+  { value: "sonnet", label: "Sonnet" },
+  { value: "haiku", label: "Haiku" },
+];
+
+export const DEFAULT_CHAT_MODEL = "opus";
+
+export const DEFAULT_CHAT_EFFORT: ChatEffort = "high";
+
+export const CHAT_EFFORTS: { value: ChatEffort; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "Extra high" },
+  { value: "max", label: "Max" },
+];
 
 export const DEFAULT_CHAT_PERMISSION_MODE: ChatPermissionMode = "acceptEdits";
 

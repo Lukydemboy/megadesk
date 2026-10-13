@@ -82,6 +82,12 @@ pub struct ChatSpawnOpts {
     /// Session to continue (`--resume`).
     #[serde(default)]
     pub resume: Option<String>,
+    /// Claude Code `--model` (an alias like "opus" or a full model name).
+    #[serde(default)]
+    pub model: Option<String>,
+    /// Claude Code `--effort` (low, medium, high, xhigh, max).
+    #[serde(default)]
+    pub effort: Option<String>,
 }
 
 fn emit_line(app: &AppHandle, log: &Mutex<EventLog>, id: &str, line: String) {
@@ -128,6 +134,14 @@ pub fn spawn_chat(
     if let Some(sid) = opts.resume.as_ref().filter(|s| !s.is_empty()) {
         args.push("--resume".into());
         args.push(sid.clone());
+    }
+    if let Some(model) = opts.model.as_ref().filter(|m| !m.is_empty()) {
+        args.push("--model".into());
+        args.push(model.clone());
+    }
+    if let Some(effort) = opts.effort.as_ref().filter(|e| !e.is_empty()) {
+        args.push("--effort".into());
+        args.push(effort.clone());
     }
 
     let (program, args) = crate::platform::user_command(&opts.command, &args);
@@ -238,6 +252,84 @@ pub fn interrupt_chat(store: State<'_, ChatStore>, id: String) -> Result<(), Str
         "request": { "subtype": "interrupt" },
     });
     write_line(chat, &req)
+}
+
+/// Send a control request (e.g. `{"subtype":"set_model","model":"opus"}`)
+/// to a running chat. Its response arrives as an ordinary event line.
+#[tauri::command]
+pub fn control_chat(
+    store: State<'_, ChatStore>,
+    id: String,
+    request: serde_json::Value,
+) -> Result<(), String> {
+    let map = store.0.lock().unwrap();
+    let chat = map.get(&id).ok_or("no such chat")?;
+    let req = serde_json::json!({
+        "type": "control_request",
+        "request_id": uuid::Uuid::new_v4().to_string(),
+        "request": request,
+    });
+    write_line(chat, &req)
+}
+
+/// The models Claude Code offers (`value`, `displayName` like "Opus 5.5",
+/// ...), read from its `initialize` response. Needs no API call: a
+/// short-lived process is started, asked, and killed.
+#[tauri::command]
+pub async fn chat_models(command: String) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let args = [
+            "-p",
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+        ]
+        .map(String::from);
+        let (program, args) = crate::platform::user_command(&command, &args);
+        let mut child = crate::platform::command(&program)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        let mut stdin = child.stdin.take().ok_or("no stdin")?;
+        let stdout = child.stdout.take().ok_or("no stdout")?;
+        let req = serde_json::json!({
+            "type": "control_request",
+            "request_id": "models",
+            "request": { "subtype": "initialize" },
+        });
+        let sent = writeln!(stdin, "{req}").and_then(|_| stdin.flush());
+        if let Err(e) = sent {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(e.to_string());
+        }
+        // Read on a thread so a process that never answers can't hang us.
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for line in BufReader::new(stdout).lines() {
+                let Ok(line) = line else { break };
+                let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) else {
+                    continue;
+                };
+                if v["type"] == "control_response" && v["response"]["request_id"] == "models" {
+                    let _ = tx.send(v["response"]["response"]["models"].clone());
+                    break;
+                }
+            }
+        });
+        let models = rx.recv_timeout(std::time::Duration::from_secs(15));
+        let _ = child.kill();
+        let _ = child.wait();
+        drop(stdin);
+        models.map_err(|_| "no models reported".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

@@ -1494,8 +1494,8 @@ select.field-input {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow: hidden;
 }
 .composer-chip {
   flex: none;
@@ -1506,9 +1506,72 @@ select.field-input {
   line-height: 20px;
   white-space: nowrap;
 }
-.composer-chip:hover {
+.composer-chip:hover,
+.composer-chip.active {
   background: var(--chat-bubble);
   color: var(--text);
+}
+button.composer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.composer-chip-caret {
+  display: inline-flex;
+  opacity: 0.6;
+}
+.composer-chip-caret svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg);
+}
+.chip-menu {
+  position: relative;
+}
+.chip-menu-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--chat-outline);
+  background: var(--chat-card);
+  box-shadow: var(--shadow-lg);
+}
+.chip-menu-head {
+  padding: 6px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.chip-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.chip-menu-item:hover {
+  background: var(--chat-bubble);
+}
+.chip-menu-item svg {
+  width: 14px;
+  height: 14px;
 }
 .composer-send {
   flex: none;

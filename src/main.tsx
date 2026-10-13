@@ -47,6 +47,13 @@ async function boot() {
     });
     saveConfig();
   };
+  m.onChatPrefs = (id, prefs) => {
+    mutate((c) => {
+      const def = c.agents.find((a) => a.id === id);
+      if (def) Object.assign(def, prefs);
+    });
+    saveConfig();
+  };
   m.onFocusAgent = (id) => {
     config.columns.forEach((col, ci) =>
       col.panes.forEach((p, pi) => {

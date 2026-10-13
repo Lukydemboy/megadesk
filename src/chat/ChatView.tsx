@@ -15,7 +15,14 @@ import { Marked } from "marked";
 import DOMPurify from "dompurify";
 import type { Attachment, ChatSession } from "./ChatSession";
 import type { ChatItem, ToolItem } from "./events";
-import { DEFAULT_CHAT_PERMISSION_MODE } from "../core/types";
+import {
+  CHAT_EFFORTS,
+  CHAT_MODELS,
+  type ChatEffort,
+  DEFAULT_CHAT_EFFORT,
+  DEFAULT_CHAT_MODEL,
+  DEFAULT_CHAT_PERMISSION_MODE,
+} from "../core/types";
 import { Icon, type IconName } from "../ui/icons";
 
 /*
@@ -452,6 +459,103 @@ const PERMISSION_LABELS: Record<string, string> = {
   bypassPermissions: "Full access",
 };
 
+/** "claude-opus-5-5[1m]" → "Opus 5.5 (1M)"; anything else is shown as is. */
+function modelName(id: string): string {
+  const m = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?(\[1m\])?$/i.exec(id);
+  if (!m) return id;
+  const family = m[1][0].toUpperCase() + m[1].slice(1);
+  return `${family} ${m[2]}${m[3] ? "." + m[3] : ""}${m[4] ? " (1M)" : ""}`;
+}
+
+/** Claude Code's names for its models ("opus" → "Opus 5.5"), loaded once. */
+const [modelNames, setModelNames] = createSignal<Record<string, string>>({});
+let modelNamesLoading = false;
+
+function loadModelNames(command: string) {
+  if (modelNamesLoading) return;
+  modelNamesLoading = true;
+  invoke<{ value: string; displayName: string }[]>("chat_models", { command })
+    .then((ms) => setModelNames(Object.fromEntries(ms.map((m) => [m.value, m.displayName]))))
+    .catch(() => (modelNamesLoading = false));
+}
+
+/** The menu's models, with version numbers once Claude Code reported them. */
+function modelOptions() {
+  return CHAT_MODELS.map((m) => {
+    const oneM = m.value.endsWith("[1m]");
+    const name = modelNames()[oneM ? m.value.slice(0, -4) : m.value];
+    return name ? { value: m.value, label: oneM ? `${name} (1M context)` : name } : m;
+  });
+}
+
+/** A composer chip that opens a menu of choices above it. */
+function ChipMenu(props: {
+  label: string;
+  title: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onSelect: (v: string) => void;
+  testId?: string;
+}) {
+  const [open, setOpen] = createSignal(false);
+  let root!: HTMLDivElement;
+  const onDown = (e: PointerEvent) => {
+    if (!root.contains(e.target as Node)) setOpen(false);
+  };
+  createEffect(() => {
+    if (!open()) return;
+    document.addEventListener("pointerdown", onDown, true);
+    onCleanup(() => document.removeEventListener("pointerdown", onDown, true));
+  });
+  const pick = (v: string) => {
+    setOpen(false);
+    props.onSelect(v);
+  };
+  const Option = (o: { value: string; label: string }) => (
+    <button
+      class="chip-menu-item"
+      classList={{ selected: props.value === o.value }}
+      onClick={() => pick(o.value)}
+    >
+      <span>{o.label}</span>
+      <Show when={props.value === o.value}>
+        <Icon name="check" />
+      </Show>
+    </button>
+  );
+  return (
+    <div
+      class="chip-menu"
+      ref={root}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open()) {
+          e.stopPropagation();
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        class="composer-chip"
+        classList={{ active: open() }}
+        title={props.title}
+        onClick={() => setOpen((o) => !o)}
+        data-testid={props.testId}
+      >
+        {props.label}
+        <span class="composer-chip-caret">
+          <Icon name="chevron" />
+        </span>
+      </button>
+      <Show when={open()}>
+        <div class="chip-menu-pop" role="menu">
+          <div class="chip-menu-head">{props.title}</div>
+          <For each={props.options}>{(o) => <Option {...o} />}</For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 export function ChatView(props: { session: ChatSession }) {
   const s = props.session;
   const st = s.state;
@@ -485,6 +589,18 @@ export function ChatView(props: { session: ChatSession }) {
   const autosize = () => {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 240) + "px";
+  };
+
+  loadModelNames(s.def.command || "claude");
+
+  // Until Claude Code has reported its model names, fall back to the
+  // version of the model that last answered, if it's the one picked.
+  const modelLabel = () => {
+    const pick = s.def.model ?? DEFAULT_CHAT_MODEL;
+    const base = pick.replace(/\[.*\]$/, "");
+    const label = modelOptions().find((m) => m.value === pick)?.label ?? pick;
+    if (!modelNames()[base] && st.model?.includes(base)) return modelName(st.model);
+    return label;
   };
 
   const canSend = () => !!text().trim() || attachments().length > 0;
@@ -659,9 +775,25 @@ export function ChatView(props: { session: ChatSession }) {
           />
           <div class="composer-bar">
             <div class="composer-chips">
-              <Show when={st.model}>
-                <span class="composer-chip">{st.model}</span>
-              </Show>
+              <ChipMenu
+                title="Model"
+                label={modelLabel()}
+                options={modelOptions()}
+                value={s.def.model ?? DEFAULT_CHAT_MODEL}
+                onSelect={(v) => void s.setModel(v)}
+                testId="chat-model"
+              />
+              <ChipMenu
+                title="Effort"
+                label={
+                  CHAT_EFFORTS.find((e) => e.value === (s.def.effort ?? DEFAULT_CHAT_EFFORT))!
+                    .label
+                }
+                options={CHAT_EFFORTS}
+                value={s.def.effort ?? DEFAULT_CHAT_EFFORT}
+                onSelect={(v) => s.setEffort(v as ChatEffort)}
+                testId="chat-effort"
+              />
               <span class="composer-chip">
                 {PERMISSION_LABELS[s.def.permissionMode ?? DEFAULT_CHAT_PERMISSION_MODE]}
               </span>

@@ -385,6 +385,9 @@ export class SessionManager {
   /** A chat started (or, with `undefined`, dropped) its Claude Code session. */
   onChatSessionId: (agentId: string, sessionId: string | undefined) => void =
     () => {};
+  /** The user picked a chat's model or effort in its composer. */
+  onChatPrefs: (agentId: string, prefs: Pick<AgentDef, "model" | "effort">) => void =
+    () => {};
 
   constructor(settings: Settings) {
     this.settings = settings;
