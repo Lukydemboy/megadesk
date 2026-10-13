@@ -292,7 +292,7 @@ function PaneActions(props: {
                     }}
                   >
                     <Icon name="restart" />
-                    Restart this terminal
+                    {def().mode === "chat" ? "New conversation" : "Restart this terminal"}
                   </button>
                   <button
                     class="popmenu-item"
@@ -302,7 +302,7 @@ function PaneActions(props: {
                     }}
                   >
                     <Icon name="stop" />
-                    Stop this terminal
+                    {def().mode === "chat" ? "Stop Claude" : "Stop this terminal"}
                   </button>
                 </>
               )}

@@ -1,3 +1,4 @@
+mod chat;
 mod platform;
 mod pty;
 
@@ -6,6 +7,7 @@ use std::fs;
 use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager};
 
+use chat::ChatStore;
 use pty::AgentStore;
 
 fn config_file(app: &AppHandle) -> Result<std::path::PathBuf, String> {
@@ -490,6 +492,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AgentStore::default())
+        .manage(ChatStore::default())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -556,6 +559,13 @@ pub fn run() {
             pty::kill_agent,
             pty::agent_running,
             pty::agent_snapshot,
+            chat::spawn_chat,
+            chat::send_chat,
+            chat::interrupt_chat,
+            chat::kill_chat,
+            chat::chat_running,
+            chat::chat_log,
+            chat::chat_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

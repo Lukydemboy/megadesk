@@ -150,5 +150,5 @@ export function revealAgent(id: string) {
   } else {
     assignAgentToPane(id); // adds it as a tab in the target pane
   }
-  requestAnimationFrame(() => mgr.sessions.get(id)?.term.focus());
+  requestAnimationFrame(() => mgr.sessions.get(id)?.focus());
 }

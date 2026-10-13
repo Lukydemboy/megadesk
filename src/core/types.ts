@@ -10,7 +10,27 @@ export interface AgentDef {
    * user-defined entry that lives in the sidebar and outlives its panes.
    */
   kind?: "agent" | "shell";
+  /**
+   * "terminal" (the default) runs the command in a PTY. "chat" drives a
+   * Claude Code compatible CLI over its stream-json protocol and renders
+   * the conversation as chat messages.
+   */
+  mode?: AgentMode;
+  /** Chat mode: Claude Code `--permission-mode` for the session. */
+  permissionMode?: ChatPermissionMode;
+  /** Chat mode: the Claude Code session to resume on the next launch. */
+  sessionId?: string;
 }
+
+export type AgentMode = "terminal" | "chat";
+
+export type ChatPermissionMode =
+  | "default"
+  | "acceptEdits"
+  | "plan"
+  | "bypassPermissions";
+
+export const DEFAULT_CHAT_PERMISSION_MODE: ChatPermissionMode = "acceptEdits";
 
 export interface Pane {
   /** Terminals living in this pane, shown as tabs. */

@@ -4,7 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { registerWrappingLinkProvider } from "./linkProvider";
-import type { AgentDef, Settings, TerminalTheme } from "../core/types";
+import { ChatSession } from "../chat/ChatSession";
+import type { AgentDef, AgentMode, Settings, TerminalTheme } from "../core/types";
 import {
   DEFAULT_TERM_FONT,
   DEFAULT_TERM_FONT_SIZE,
@@ -74,7 +75,36 @@ function b64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
-export class Session {
+/**
+ * What a pane needs from whatever lives in a tab: a terminal (PTY + xterm)
+ * or a chat (Claude Code over stream-json). Each owns a host element that is
+ * moved between panes but never recreated.
+ */
+export interface AgentSession {
+  readonly mode: AgentMode;
+  def: AgentDef;
+  host: HTMLDivElement;
+  running: boolean;
+  exited: boolean;
+  starting: boolean;
+  attention: boolean;
+  manager?: SessionManager;
+  start(mgr: SessionManager): Promise<void>;
+  kill(): Promise<void>;
+  restart(mgr: SessionManager): Promise<void>;
+  dispose(): void;
+  /** Put the keyboard cursor in the session (terminal or chat composer). */
+  focus(): void;
+  fitAndResize(): void;
+  applyFont(settings: Settings): void;
+  applyTheme(settings: Settings): void;
+  clearAttention(mgr: SessionManager): void;
+}
+
+const modeOf = (def: AgentDef): AgentMode => def.mode ?? "terminal";
+
+export class Session implements AgentSession {
+  readonly mode = "terminal";
   def: AgentDef;
   term: Terminal;
   fit: FitAddon;
@@ -203,6 +233,10 @@ export class Session {
       this.attention = false;
       mgr.sync(this.def.id);
     }
+  }
+
+  focus() {
+    this.term.focus();
   }
 
   /** Swap the terminal's colour scheme live. */
@@ -335,7 +369,7 @@ export interface SessionState {
 }
 
 export class SessionManager {
-  sessions = new Map<string, Session>();
+  sessions = new Map<string, AgentSession>();
   settings: Settings;
   activeAgentId: string | null = null;
   visibleIds = new Set<string>();
@@ -348,6 +382,9 @@ export class SessionManager {
   /** Called after a process exits, so shells can be dropped entirely. */
   onExit: (def: AgentDef) => void = () => {};
   onToast: (message: string, kind?: "info" | "warn") => void = () => {};
+  /** A chat started (or, with `undefined`, dropped) its Claude Code session. */
+  onChatSessionId: (agentId: string, sessionId: string | undefined) => void =
+    () => {};
 
   constructor(settings: Settings) {
     this.settings = settings;
@@ -370,24 +407,24 @@ export class SessionManager {
       const typingElsewhere =
         active instanceof HTMLElement &&
         active !== document.body &&
-        active !== s?.term.textarea &&
+        !s?.host.contains(active) &&
         (active.tagName === "INPUT" ||
           active.tagName === "TEXTAREA" ||
           active.isContentEditable);
-      if (!typingElsewhere) s?.term.focus();
+      if (!typingElsewhere) s?.focus();
     };
     window.addEventListener("focus", onWindowFocused);
     void listen("window-focused", onWindowFocused);
 
     void listen<{ id: string; b64: string }>("agent:output", (e) => {
       const s = this.sessions.get(e.payload.id);
-      if (!s) return;
+      if (!(s instanceof Session)) return;
       s.term.write(b64ToBytes(e.payload.b64));
       s.markOutput(this);
     });
     void listen<{ id: string; code: number | null }>("agent:exit", (e) => {
       const s = this.sessions.get(e.payload.id);
-      if (!s) return;
+      if (!(s instanceof Session)) return;
       s.running = false;
       s.exited = true;
       s.term.write(
@@ -402,6 +439,19 @@ export class SessionManager {
         return;
       }
       this.onToast(`${s.def.name} — process exited`, "warn");
+    });
+
+    void listen<{ id: string; line: string }>("chat:event", (e) => {
+      const s = this.sessions.get(e.payload.id);
+      if (s instanceof ChatSession) s.onLine(e.payload.line);
+    });
+    void listen<{ id: string; text: string }>("chat:stderr", (e) => {
+      const s = this.sessions.get(e.payload.id);
+      if (s instanceof ChatSession) s.onStderr(e.payload.text);
+    });
+    void listen<{ id: string; code: number | null }>("chat:exit", (e) => {
+      const s = this.sessions.get(e.payload.id);
+      if (s instanceof ChatSession) s.onExit(e.payload.code);
     });
   }
 
@@ -420,12 +470,23 @@ export class SessionManager {
     });
   }
 
-  ensure(def: AgentDef): Session {
+  /**
+   * The live session for `def`, created on first use. Switching an agent
+   * between terminal and chat mode replaces its session.
+   */
+  ensure(def: AgentDef): AgentSession {
     let s = this.sessions.get(def.id);
+    if (s && s.mode !== modeOf(def)) {
+      this.remove(def.id);
+      s = undefined;
+    }
     if (!s) {
-      s = new Session(def, this.settings);
+      s =
+        modeOf(def) === "chat"
+          ? new ChatSession(def, this.settings)
+          : new Session(def, this.settings);
       s.manager = this;
-      s.term.textarea?.addEventListener("focus", () => {
+      s.host.addEventListener("focusin", () => {
         this.activeAgentId = def.id;
         s!.clearAttention(this);
         this.onFocusAgent(def.id);

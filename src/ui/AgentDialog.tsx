@@ -1,6 +1,12 @@
 import { Show } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
-import { type AgentDef, uid } from "../core/types";
+import {
+  type AgentDef,
+  type AgentMode,
+  type ChatPermissionMode,
+  DEFAULT_CHAT_PERMISSION_MODE,
+  uid,
+} from "../core/types";
 import { config, homeDir } from "../core/store";
 import { paneCwd } from "../core/layout";
 import {
@@ -10,7 +16,19 @@ import {
   upsertAgent,
 } from "../core/agents";
 import { type AgentDialogState, agentDialog, closeAgentDialog } from "./overlays";
-import { Dialog, PathField, TextField } from "./controls";
+import { Dialog, PathField, SelectField, TextField } from "./controls";
+
+const MODE_OPTIONS: { value: AgentMode; label: string }[] = [
+  { value: "terminal", label: "Terminal" },
+  { value: "chat", label: "Chat (Claude Code)" },
+];
+
+const PERMISSION_OPTIONS: { value: ChatPermissionMode; label: string }[] = [
+  { value: "acceptEdits", label: "Accept edits — ask for nothing else" },
+  { value: "default", label: "Default — tools needing approval are denied" },
+  { value: "plan", label: "Plan — read-only, proposes a plan" },
+  { value: "bypassPermissions", label: "Bypass — allow everything" },
+];
 
 export function AgentDialog() {
   return (
@@ -83,6 +101,20 @@ function AgentDialogForm(props: { state: AgentDialogState }) {
         onInput={(v) => setDef("name", v)}
         testId="agent-name-input"
       />
+      <SelectField
+        label="Mode"
+        options={MODE_OPTIONS}
+        value={def.mode ?? "terminal"}
+        onChange={(v) => setDef("mode", v as AgentMode)}
+      />
+      <Show when={def.mode === "chat"}>
+        <SelectField
+          label="Permissions"
+          options={PERMISSION_OPTIONS}
+          value={def.permissionMode ?? DEFAULT_CHAT_PERMISSION_MODE}
+          onChange={(v) => setDef("permissionMode", v as ChatPermissionMode)}
+        />
+      </Show>
       <TextField
         label="Command"
         value={def.command}

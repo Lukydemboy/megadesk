@@ -3,26 +3,27 @@ import type { Pane } from "../core/types";
 import { config, mgr } from "../core/store";
 
 /**
- * Hosts the active tab's terminal. The xterm host elements live on the Session
- * objects and are never recreated — this component just moves the right one
- * into place when the active tab changes, and detaches it on cleanup (without
- * ever disposing the session, so hidden/zoomed-away terminals keep running).
+ * Hosts the active tab's session (a terminal or a chat). The host elements
+ * live on the session objects and are never recreated — this component just
+ * moves the right one into place when the active tab (or its mode) changes,
+ * and detaches it on cleanup (without ever disposing the session, so
+ * hidden/zoomed-away tabs keep running).
  */
 export function PaneBody(props: { pane: Pane }) {
   let mount!: HTMLDivElement;
 
   createEffect(
     on(
-      () => props.pane.activeId,
-      (activeId) => {
+      () => {
+        const id = props.pane.activeId;
+        return [id, config.agents.find((a) => a.id === id)?.mode] as const;
+      },
+      ([activeId]) => {
         mount.replaceChildren();
         if (!activeId) return;
-        let s = mgr.sessions.get(activeId);
-        if (!s) {
-          const def = config.agents.find((a) => a.id === activeId);
-          if (!def) return;
-          s = mgr.ensure(def);
-        }
+        const def = config.agents.find((a) => a.id === activeId);
+        if (!def) return;
+        const s = mgr.ensure(def);
         mount.appendChild(s.host);
         requestAnimationFrame(() => {
           s.fitAndResize();

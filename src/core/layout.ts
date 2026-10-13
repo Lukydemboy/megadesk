@@ -127,7 +127,7 @@ export function selectTabByIndex(n: number) {
     c.columns[fp.ci].panes[fp.pi].activeId = id;
   });
   saveConfig();
-  requestAnimationFrame(() => mgr.sessions.get(id)?.term.focus());
+  requestAnimationFrame(() => mgr.sessions.get(id)?.focus());
 }
 
 /** Cycle the focused pane's active tab. dir: +1 next, -1 previous. */
@@ -142,5 +142,5 @@ export function cycleTab(dir: number) {
     c.columns[fp.ci].panes[fp.pi].activeId = id;
   });
   saveConfig();
-  requestAnimationFrame(() => mgr.sessions.get(id)?.term.focus());
+  requestAnimationFrame(() => mgr.sessions.get(id)?.focus());
 }

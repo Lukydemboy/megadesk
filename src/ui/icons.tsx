@@ -35,6 +35,30 @@ const ICONS: Record<string, string> = {
     '<circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/>' +
     '<path d="M6 8.4V15.6"/><path d="M18 8.4V13a3.5 3.5 0 0 1-3.5 3.5H13"/>' +
     '<path d="M11.5 14.5 13 16.5l-1.5 2"/>',
+  /* chat work log */
+  terminal: '<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>',
+  file:
+    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+    '<path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
+  pencil:
+    '<path d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2 3 21l4.8-.8z"/><path d="m15 5 4 4"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  globe:
+    '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/>' +
+    '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  brain:
+    '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>' +
+    '<path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>' +
+    '<path d="M12 5v13"/>',
+  list: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/>',
+  bot:
+    '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4H8"/>' +
+    '<path d="M2 14h1M21 14h1M9 13v2M15 13v2"/>',
+  wrench:
+    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  chevron: '<path d="m9 18 6-6-6-6"/>',
+  "arrow-up": '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
 };
 
 export type IconName = keyof typeof ICONS;
