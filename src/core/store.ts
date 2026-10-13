@@ -6,6 +6,7 @@ import {
   type Pane,
   type PaneRef,
   type Settings,
+  DEFAULT_DRAWER_FRAC,
   defaultConfig,
 } from "./types";
 import type { SessionManager } from "../terminal/sessions";
@@ -79,6 +80,21 @@ export async function loadConfig() {
       (next.agents ?? []).filter((a) => a.kind === "shell").map((a) => a.id),
     );
     next.agents = (next.agents ?? []).filter((a) => a.kind !== "shell");
+    // Drawer shells go with the rest; keep only each drawer's height.
+    const agentIds = new Set(next.agents.map((a) => a.id));
+    next.drawers = Object.fromEntries(
+      Object.entries(parsed.drawers ?? {})
+        .filter(([id]) => agentIds.has(id))
+        .map(([id, d]) => [
+          id,
+          {
+            ids: [],
+            activeId: null,
+            open: false,
+            frac: typeof d?.frac === "number" ? d.frac : DEFAULT_DRAWER_FRAC,
+          },
+        ]),
+    );
     if (!next.columns?.length) next.columns = defaultConfig().columns;
     for (const col of next.columns) {
       col.panes = col.panes.map(migratePane);

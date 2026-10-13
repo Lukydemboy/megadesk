@@ -1,5 +1,21 @@
-import { type AgentDef, type Config, type Pane, type PaneRef, uid } from "./types";
-import { config, focusedPane, mgr, mutate, saveConfig, setFocusedPane, shellPath } from "./store";
+import {
+  type AgentDef,
+  type Config,
+  type Pane,
+  type PaneRef,
+  DEFAULT_DRAWER_FRAC,
+  uid,
+} from "./types";
+import {
+  config,
+  focusedPane,
+  homeDir,
+  mgr,
+  mutate,
+  saveConfig,
+  setFocusedPane,
+  shellPath,
+} from "./store";
 import { baseName, locateAgent, paneCwd, targetPaneRef } from "./layout";
 
 /* ---------- agent CRUD ---------- */
@@ -14,11 +30,14 @@ export function upsertAgent(def: AgentDef) {
 }
 
 export function deleteAgent(id: string) {
+  const shells = config.drawers[id]?.ids ?? [];
   mutate((c) => {
-    c.agents = c.agents.filter((a) => a.id !== id);
+    c.agents = c.agents.filter((a) => a.id !== id && !shells.includes(a.id));
     for (const col of c.columns) for (const p of col.panes) removeTabFromPane(p, id);
+    delete c.drawers[id];
   });
   mgr.remove(id);
+  for (const s of shells) mgr.remove(s);
   saveConfig();
 }
 
@@ -80,39 +99,79 @@ export function closeTab(ref: PaneRef, id: string) {
   saveConfig();
 }
 
-/** Delete a shell entirely: its tab, its session and its config entry. */
+/** Delete a shell entirely: its tab (or drawer tab), its session and its config entry. */
 export function disposeShell(id: string) {
   mutate((c) => {
     c.agents = c.agents.filter((a) => a.id !== id);
     for (const col of c.columns) for (const p of col.panes) removeTabFromPane(p, id);
+    for (const d of Object.values(c.drawers)) {
+      const i = d.ids.indexOf(id);
+      if (i < 0) continue;
+      d.ids.splice(i, 1);
+      if (d.activeId === id) d.activeId = d.ids[Math.min(i, d.ids.length - 1)] ?? null;
+      if (!d.ids.length) d.open = false;
+    }
   });
   mgr.remove(id);
   saveConfig();
 }
 
-/** Close the active tab of the focused pane (Cmd/Ctrl+W). */
+/** The agent whose terminal drawer holds shell `id`, if any. */
+export function drawerOwner(id: string): string | null {
+  for (const [owner, d] of Object.entries(config.drawers))
+    if (d.ids.includes(id)) return owner;
+  return null;
+}
+
+/** The pane's active tab, if it's a project agent (the kind that gets a drawer). */
+export function paneAgent(pane: Pane | undefined): AgentDef | undefined {
+  const def = config.agents.find((a) => a.id === pane?.activeId);
+  return def && def.kind !== "shell" ? def : undefined;
+}
+
+/**
+ * Close the focused thing (Cmd/Ctrl+W): the drawer terminal the cursor is in,
+ * otherwise the focused pane's active tab.
+ */
 export function closeFocusedTab() {
   const fp = focusedPane();
   const pane = fp && config.columns[fp.ci]?.panes[fp.pi];
+  const drawer = config.drawers[pane?.activeId ?? ""];
+  const inDrawer = drawer?.open && drawer.activeId;
+  if (inDrawer && mgr.sessions.get(inDrawer)?.host.contains(document.activeElement)) {
+    disposeShell(inDrawer);
+    requestAnimationFrame(() => {
+      const next = config.drawers[pane!.activeId!]?.activeId ?? pane!.activeId!;
+      mgr.sessions.get(next)?.focus();
+    });
+    return;
+  }
   const id = pane?.activeId;
   if (!fp || !id) return;
   closeTab(fp, id);
 }
 
-/** Open a new shell tab in the focused pane (Cmd/Ctrl+T). */
-export function newShellInFocusedPane() {
+/** Open a new terminal from the focused pane (Cmd/Ctrl+T). */
+export function newTerminalInFocusedPane() {
   const fp = focusedPane();
-  if (fp) newShellInPane(fp);
+  if (fp) newTerminalInPane(fp);
 }
 
-export function newShellInPane(ref: PaneRef) {
-  const pane = config.columns[ref.ci]?.panes[ref.pi];
-  if (!pane) return;
-  const cwd = paneCwd(pane);
+/**
+ * A new terminal for a pane: in the active agent's drawer when there is one,
+ * so it starts in that agent's project; otherwise a plain shell tab.
+ */
+export function newTerminalInPane(ref: PaneRef) {
+  const agent = paneAgent(config.columns[ref.ci]?.panes[ref.pi]);
+  if (agent) newDrawerTerminal(agent.id);
+  else newShellInPane(ref);
+}
+
+function shellDef(cwd: string, name: string): AgentDef {
   const shell = shellPath || "zsh";
-  const def: AgentDef = {
+  return {
     id: uid(),
-    name: `${baseName(shell)} · ${baseName(cwd)}`,
+    name,
     command: shell,
     // Login + interactive, matching a normal terminal window: the pty is
     // already reached via an `exec` from a login shell (see spawn_agent),
@@ -124,6 +183,73 @@ export function newShellInPane(ref: PaneRef) {
     cwd,
     kind: "shell",
   };
+}
+
+/** Add a shell to an agent's drawer, opened in the agent's project root. */
+export function newDrawerTerminal(agentId: string) {
+  const agent = config.agents.find((a) => a.id === agentId);
+  if (!agent) return;
+  const cwd = agent.cwd || config.settings.defaultCwd || homeDir;
+  const taken = new Set(
+    (config.drawers[agentId]?.ids ?? []).map(
+      (id) => config.agents.find((a) => a.id === id)?.name,
+    ),
+  );
+  const base = baseName(shellPath || "zsh");
+  let n = 1;
+  while (taken.has(`${base} ${n}`)) n++;
+  const def = shellDef(cwd, `${base} ${n}`);
+  mutate((c) => {
+    c.agents.push(def);
+    const d = (c.drawers[agentId] ??= {
+      ids: [],
+      activeId: null,
+      open: false,
+      frac: DEFAULT_DRAWER_FRAC,
+    });
+    d.ids.push(def.id);
+    d.activeId = def.id;
+    d.open = true;
+  });
+  saveConfig();
+  requestAnimationFrame(() => mgr.sessions.get(def.id)?.focus());
+}
+
+/** Show or hide an agent's drawer; an empty drawer gets its first terminal. */
+export function toggleDrawer(agentId: string) {
+  const d = config.drawers[agentId];
+  if (!d?.ids.length) return newDrawerTerminal(agentId);
+  const open = !d.open;
+  mutate((c) => {
+    c.drawers[agentId].open = open;
+  });
+  saveConfig();
+  const focusId = open ? d.activeId : agentId;
+  requestAnimationFrame(() => focusId && mgr.sessions.get(focusId)?.focus());
+}
+
+/** Toggle the focused pane's drawer (Cmd/Ctrl+J). */
+export function toggleFocusedDrawer() {
+  const fp = focusedPane();
+  const agent = fp && paneAgent(config.columns[fp.ci]?.panes[fp.pi]);
+  if (agent) toggleDrawer(agent.id);
+}
+
+export function selectDrawerTab(agentId: string, id: string) {
+  mutate((c) => {
+    const d = c.drawers[agentId];
+    if (d?.ids.includes(id)) d.activeId = id;
+  });
+  saveConfig();
+  requestAnimationFrame(() => mgr.sessions.get(id)?.focus());
+}
+
+/** A plain shell tab in a pane (the pane picker's "+ Shell here"). */
+export function newShellInPane(ref: PaneRef) {
+  const pane = config.columns[ref.ci]?.panes[ref.pi];
+  if (!pane) return;
+  const cwd = paneCwd(pane);
+  const def = shellDef(cwd, `${baseName(shellPath || "zsh")} · ${baseName(cwd)}`);
   mutate((c) => {
     c.agents.push(def);
     const p = c.columns[ref.ci]?.panes[ref.pi];
@@ -140,6 +266,17 @@ export function newShellInPane(ref: PaneRef) {
  */
 export function revealAgent(id: string) {
   if (!config.agents.some((a) => a.id === id)) return;
+  const owner = drawerOwner(id);
+  if (owner) {
+    revealAgent(owner);
+    mutate((c) => {
+      c.drawers[owner].activeId = id;
+      c.drawers[owner].open = true;
+    });
+    saveConfig();
+    requestAnimationFrame(() => mgr.sessions.get(id)?.focus());
+    return;
+  }
   const loc = locateAgent(id);
   if (loc) {
     mutate((c) => {

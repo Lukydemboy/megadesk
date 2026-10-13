@@ -1,5 +1,9 @@
 import { listen } from "@tauri-apps/api/event";
-import { closeFocusedTab, newShellInFocusedPane } from "../core/agents";
+import {
+  closeFocusedTab,
+  newTerminalInFocusedPane,
+  toggleFocusedDrawer,
+} from "../core/agents";
 import { bumpFontSize, toggleSidebar, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
 import { isPaletteOpen, toggleCommandPalette } from "./overlays";
@@ -61,10 +65,17 @@ export function installKeys() {
         closeFocusedTab();
         return;
       }
-      // Cmd/Ctrl + T  — open a new shell in the focused pane
+      // Cmd/Ctrl + T  — open a new terminal in the focused pane's project
+      // drawer (or a shell tab when the pane holds no agent)
       if (e.key === "t" || e.key === "T") {
         claim();
-        newShellInFocusedPane();
+        newTerminalInFocusedPane();
+        return;
+      }
+      // Cmd/Ctrl + J  — show/hide the focused pane's terminal drawer
+      if (e.key === "j" || e.key === "J") {
+        claim();
+        toggleFocusedDrawer();
         return;
       }
       // Cmd/Ctrl + ] / [  — switch terminal within the focused pane

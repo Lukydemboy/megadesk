@@ -20,7 +20,7 @@ import { App } from "./ui/app";
 import { installKeys } from "./ui/keys";
 import { showToast } from "./ui/Toasts";
 
-import { disposeShell } from "./core/agents";
+import { disposeShell, drawerOwner } from "./core/agents";
 
 async function boot() {
   await loadConfig();
@@ -54,7 +54,9 @@ async function boot() {
     });
     saveConfig();
   };
-  m.onFocusAgent = (id) => {
+  m.onFocusAgent = (focused) => {
+    // A drawer terminal focuses the pane its agent sits in.
+    const id = drawerOwner(focused) ?? focused;
     config.columns.forEach((col, ci) =>
       col.panes.forEach((p, pi) => {
         if (p.agentIds.includes(id)) setFocusedPane({ ci, pi });

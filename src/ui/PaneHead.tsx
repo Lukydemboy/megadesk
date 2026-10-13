@@ -18,7 +18,13 @@ import {
   zoomedPane,
 } from "../core/store";
 import { paneCwd, toggleZoom } from "../core/layout";
-import { closeTab, newShellInPane, upsertAgent } from "../core/agents";
+import {
+  closeTab,
+  newTerminalInPane,
+  paneAgent,
+  toggleDrawer,
+  upsertAgent,
+} from "../core/agents";
 import { openAgentPicker, openBranchesDialog, openResetToMainDialog } from "./overlays";
 import { showToast } from "./Toasts";
 import { Icon } from "./icons";
@@ -44,7 +50,7 @@ export function PaneHead(props: { ci: number; pi: number; pane: Pane }) {
         const t = e.target as HTMLElement;
         if (t !== e.currentTarget && !t.classList.contains("pane-tabs")) return;
         setFocusedPane({ ci: props.ci, pi: props.pi });
-        newShellInPane({ ci: props.ci, pi: props.pi });
+        newTerminalInPane({ ci: props.ci, pi: props.pi });
       }}
     >
       <div class="pane-tabs">
@@ -59,6 +65,22 @@ export function PaneHead(props: { ci: number; pi: number; pane: Pane }) {
 
       <Show when={props.pane.agentIds.length}>
         <PaneBranch pane={props.pane} />
+      </Show>
+      <Show when={paneAgent(props.pane)}>
+        {(agent) => (
+          <button
+            class="pane-btn"
+            classList={{ on: !!config.drawers[agent().id]?.open }}
+            title="Terminals in this project (⌘J)"
+            onClick={(e) => {
+              e.stopPropagation();
+              setFocusedPane({ ci: props.ci, pi: props.pi });
+              toggleDrawer(agent().id);
+            }}
+          >
+            <Icon name="drawer" />
+          </button>
+        )}
       </Show>
       <PaneActions ci={props.ci} pi={props.pi} pane={props.pane} activeDef={activeDef} />
     </div>

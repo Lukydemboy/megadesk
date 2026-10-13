@@ -37,7 +37,13 @@ export function App() {
           (p.activeId && !p.agentIds.includes(p.activeId)) ||
           (!p.activeId && p.agentIds.length > 0),
       ),
-    );
+    ) ||
+      Object.entries(config.drawers).some(
+        ([owner, d]) =>
+          !ids.has(owner) ||
+          d.ids.some((id) => !ids.has(id)) ||
+          (d.activeId && !d.ids.includes(d.activeId)),
+      );
     if (!bad) return;
     mutate((c) => {
       for (const col of c.columns)
@@ -46,6 +52,15 @@ export function App() {
           if (p.activeId && !p.agentIds.includes(p.activeId)) p.activeId = null;
           if (!p.activeId) p.activeId = p.agentIds[0] ?? null;
         }
+      for (const [owner, d] of Object.entries(c.drawers)) {
+        if (!ids.has(owner)) {
+          delete c.drawers[owner];
+          continue;
+        }
+        d.ids = d.ids.filter((id) => ids.has(id));
+        if (!d.activeId || !d.ids.includes(d.activeId)) d.activeId = d.ids[0] ?? null;
+        if (!d.ids.length) d.open = false;
+      }
     });
   });
 
@@ -58,19 +73,25 @@ export function App() {
           const def = config.agents.find((a) => a.id === id);
           if (def) mgr.ensure(def);
         }
+    for (const d of Object.values(config.drawers))
+      for (const id of d.ids) {
+        const def = config.agents.find((a) => a.id === id);
+        if (def) mgr.ensure(def);
+      }
   });
 
   // Track which terminals are on screen; reflow them when that set changes.
   createEffect(() => {
     const visible = new Set<string>();
+    const show = (id: string | null | undefined) => {
+      if (!id) return;
+      visible.add(id);
+      const d = config.drawers[id];
+      if (d?.open && d.activeId) visible.add(d.activeId);
+    };
     const z = zoomedPane();
-    if (z) {
-      const id = config.columns[z.ci]?.panes[z.pi]?.activeId;
-      if (id) visible.add(id);
-    } else {
-      for (const col of config.columns)
-        for (const p of col.panes) if (p.activeId) visible.add(p.activeId);
-    }
+    if (z) show(config.columns[z.ci]?.panes[z.pi]?.activeId);
+    else for (const col of config.columns) for (const p of col.panes) show(p.activeId);
     mgr.visibleIds = visible;
     resizeVisible();
   });
@@ -81,13 +102,16 @@ export function App() {
     if (z && !config.columns[z.ci]?.panes[z.pi]) setZoomedPane(null);
   });
 
-  // Reflow visible terminals whenever pane fractions change.
+  // Reflow visible terminals whenever pane or drawer sizes change.
   createEffect(
     on(
       () =>
         config.columns
           .map((c) => `${c.frac}:${c.panes.map((p) => p.frac).join(",")}`)
-          .join("|"),
+          .join("|") +
+        Object.values(config.drawers)
+          .map((d) => `${d.open}:${d.frac}`)
+          .join(","),
       () => resizeVisible(),
       { defer: true },
     ),

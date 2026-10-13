@@ -543,10 +543,130 @@ body {
 .pane-btn:active {
   transform: scale(0.97);
 }
+.pane-btn.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .pane-body {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pane-main,
+.drawer-body {
   position: relative;
+  flex-basis: 0;
+  min-height: 0;
+}
+.pane-main {
+  flex-shrink: 1;
+}
+
+/* terminal drawer docked under an agent */
+.drawer {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 0;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+}
+.drawer-body {
+  flex-grow: 1;
+}
+.pane-body > .gutter-h {
+  margin: -3px 0;
+  position: relative;
+  z-index: 2;
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.drawer-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding-right: 2px;
+}
+.drawer-project .icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+.drawer-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.drawer-tabs::-webkit-scrollbar {
+  display: none;
+}
+.drawer-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 1 auto;
+  min-width: 40px;
+  max-width: 140px;
+  padding: 1px 5px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 560;
+  cursor: pointer;
+}
+.drawer-tab:hover {
+  color: var(--ink);
+}
+.drawer-tab.active {
+  background: var(--panel-2);
+  border-color: var(--border);
+  color: var(--ink);
+}
+.drawer-tab .status-dot,
+.drawer-tab .pane-tab-x {
+  flex-shrink: 0;
+}
+.drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.drawer-btn:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.drawer-btn .icon {
+  width: 14px;
+  height: 14px;
 }
 /* layout-transparent wrapper: the xterm host positions against .pane-body */
 .term-mount {

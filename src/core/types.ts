@@ -67,6 +67,23 @@ export interface Pane {
   frac: number;
 }
 
+/**
+ * The terminal drawer docked under an agent's pane: shells (kind "shell")
+ * that all start in the agent's project directory. Keyed by agent id, so it
+ * follows the agent when its tab moves to another pane.
+ */
+export interface Drawer {
+  /** Shells in the drawer, shown as tabs. */
+  ids: string[];
+  /** Which drawer tab is currently visible. */
+  activeId: string | null;
+  open: boolean;
+  /** Share of the pane body's height the drawer takes. */
+  frac: number;
+}
+
+export const DEFAULT_DRAWER_FRAC = 0.35;
+
 export interface Column {
   frac: number;
   panes: Pane[];
@@ -111,6 +128,8 @@ export interface Config {
   version: 1;
   agents: AgentDef[];
   columns: Column[];
+  /** Terminal drawers, keyed by the agent they belong to. */
+  drawers: Record<string, Drawer>;
   settings: Settings;
 }
 
@@ -119,6 +138,7 @@ export function defaultConfig(): Config {
     version: 1,
     agents: [],
     columns: [{ frac: 1, panes: [{ agentIds: [], activeId: null, frac: 1 }] }],
+    drawers: {},
     settings: {
       startupLayout: "last",
       defaultCwd: "",
