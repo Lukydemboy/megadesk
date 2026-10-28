@@ -51,6 +51,10 @@ folder picker, so you can point an agent at a project without typing the path.
   (`zed <dir>`, resolved through your login shell).
 - Sidebar lists every agent; click one to add it as a tab in the focused
   pane, or **drag it onto any pane** to drop it there. `✎` edits or deletes it.
+- **`Cmd/Ctrl + O`** (or **+ Project** in the top bar) opens a folder-browsing
+  palette: type a path (`~/` works), `Enter` descends into the highlighted
+  folder, `Tab` completes it, and `Cmd/Ctrl + Enter` opens it as a project
+  agent running `claude` — or jumps to the one you already have for it.
 - **`Cmd/Ctrl + K`** opens a jump-to-agent palette: type part of a name,
   `↑`/`↓` to pick, `Enter` to jump straight to that agent — its pane is
   focused, its tab activated, and the terminal takes the cursor. An agent

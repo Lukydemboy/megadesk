@@ -2,7 +2,7 @@ import { listen } from "@tauri-apps/api/event";
 import { closeFocusedTab, newShellInFocusedPane } from "../core/agents";
 import { bumpFontSize, toggleSidebar, zoomedPane } from "../core/store";
 import { cycleTab, selectTabByIndex, toggleZoom } from "../core/layout";
-import { isPaletteOpen, toggleCommandPalette } from "./overlays";
+import { isPaletteOpen, openProjectPalette, toggleCommandPalette } from "./overlays";
 
 export function installKeys() {
   // The packaged app's "Close Tab" menu item (which stands in for the
@@ -41,6 +41,12 @@ export function installKeys() {
       }
       // The palette owns the keyboard while it's open.
       if (isPaletteOpen()) return;
+      // Cmd/Ctrl + O  — open a project folder as a new agent
+      if (e.key === "o" || e.key === "O") {
+        claim();
+        openProjectPalette();
+        return;
+      }
       // Cmd/Ctrl + B  — show/hide the agent sidebar
       if (e.key === "b" || e.key === "B") {
         claim();

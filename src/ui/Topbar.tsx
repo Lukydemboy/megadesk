@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { PRESETS, applyPreset } from "../core/layout";
-import { openAgentDialog, openSettingsDialog } from "./overlays";
+import { openProjectPalette, openSettingsDialog } from "./overlays";
 import { Icon } from "./icons";
 
 export function Topbar() {
@@ -23,10 +23,10 @@ export function Topbar() {
       <div class="spacer" />
       <button
         class="ghost-btn"
-        onClick={() => openAgentDialog()}
-        data-testid="add-agent-button"
+        onClick={openProjectPalette}
+        data-testid="open-project-button"
       >
-        + Agent
+        + Project
       </button>
       <button
         class="ghost-btn icon-btn"

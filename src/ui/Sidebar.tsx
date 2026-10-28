@@ -11,7 +11,7 @@ export function Sidebar() {
     <div class="sidebar">
       <div class="side-title">Agents</div>
       <Show when={agents().length === 0}>
-        <div class="side-empty">No agents yet. Add one to get started.</div>
+        <div class="side-empty">No agents yet. Open a project to get started.</div>
       </Show>
       <For each={agents()}>
         {(def) => {

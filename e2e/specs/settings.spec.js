@@ -1,4 +1,5 @@
 import {
+  openNewAgentForm,
   pathInputByLabel,
   resetToBlank,
   selectByLabel,
@@ -47,7 +48,7 @@ describe("Settings", () => {
     await pathInputByLabel("Default working directory").setValue(FIXTURE_CWD);
     await $(".primary-btn=Done").click();
 
-    await $('[data-testid="add-agent-button"]').click();
+    await openNewAgentForm();
     await expect(pathInputByLabel("Working directory")).toHaveValue(FIXTURE_CWD);
 
     await $('[data-testid="agent-name-input"]').setValue("Settings CWD Probe");

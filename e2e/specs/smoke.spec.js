@@ -1,6 +1,6 @@
 import path from "node:path";
 import { screenshotsDir } from "../wdio.conf.js";
-import { resetToBlank } from "../support/helpers.js";
+import { openNewAgentForm, resetToBlank } from "../support/helpers.js";
 
 describe("Megadesk smoke test", () => {
   before(async () => {
@@ -15,8 +15,7 @@ describe("Megadesk smoke test", () => {
   });
 
   it("spawns a real agent and streams its output into the terminal", async () => {
-    const addAgentButton = await $('[data-testid="add-agent-button"]');
-    await addAgentButton.click();
+    await openNewAgentForm();
 
     const commandInput = await $('[data-testid="agent-command-input"]');
     await commandInput.waitForDisplayed();
