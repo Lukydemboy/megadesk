@@ -12,6 +12,7 @@ import { Sidebar } from "./Sidebar";
 import { Grid } from "./Grid";
 import { AgentDialog } from "./AgentDialog";
 import { AgentPicker } from "./AgentPicker";
+import { OpenProjectPalette } from "./OpenProjectPalette";
 import { SettingsDialog } from "./SettingsDialog";
 import { CommandPalette } from "./CommandPalette";
 import { BranchesDialog } from "./BranchesDialog";
@@ -109,6 +110,7 @@ export function App() {
       </div>
       <AgentDialog />
       <AgentPicker />
+      <OpenProjectPalette />
       <SettingsDialog />
       <CommandPalette />
       <BranchesDialog />

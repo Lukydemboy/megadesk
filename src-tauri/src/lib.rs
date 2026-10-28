@@ -1,3 +1,4 @@
+mod dirs;
 mod platform;
 mod pty;
 
@@ -550,6 +551,7 @@ pub fn run() {
             git_branch_source_url,
             git_create_pr_url,
             save_dropped_file,
+            dirs::list_dirs,
             pty::spawn_agent,
             pty::write_agent,
             pty::resize_agent,

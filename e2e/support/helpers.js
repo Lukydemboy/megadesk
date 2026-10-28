@@ -130,10 +130,19 @@ export async function saveAgentForm() {
   await $('[data-testid="agent-save-button"]').click();
 }
 
-/** Open the Agent dialog from the topbar's "+ Agent" button, fill it in,
- *  and save. With no focused/empty pane this lands in the first pane. */
+/** Open the New agent dialog from the first pane's actions menu
+ *  ("Add agent…" → "+ New agent…"). The topbar's "+ Project" button opens
+ *  the folder palette instead. */
+export async function openNewAgentForm() {
+  await $('button[title="Pane actions"]').click();
+  await $(".popmenu-item*=Add agent").click();
+  await $("button=+ New agent…").click();
+}
+
+/** Open the Agent dialog, fill it in, and save. With no focused/empty pane
+ *  this lands in the first pane. */
 export async function createAgentViaTopbar(fields) {
-  await $('[data-testid="add-agent-button"]').click();
+  await openNewAgentForm();
   await $('[data-testid="agent-name-input"]').waitForDisplayed();
   await fillAgentForm(fields);
   await saveAgentForm();

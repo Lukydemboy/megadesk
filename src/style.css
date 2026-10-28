@@ -945,6 +945,22 @@ select.field-input {
 .palette-row.sel .palette-where {
   color: var(--accent);
 }
+.palette-hint {
+  display: flex;
+  gap: 14px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+.palette-tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
 .palette-empty {
   padding: 14px;
   text-align: center;

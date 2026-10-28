@@ -17,7 +17,7 @@ import { paletteOpen, setPaletteOpen } from "./overlays";
  * Subsequence match with light scoring: contiguous runs and word-boundary
  * hits rank higher, shorter names break ties. `null` means no match.
  */
-function fuzzyScore(text: string, query: string): number | null {
+export function fuzzyScore(text: string, query: string): number | null {
   if (!query) return 0;
   const t = text.toLowerCase();
   const q = query.toLowerCase();
